@@ -137,7 +137,12 @@ describe('DocumentsStore', () => {
       api.list.and.returnValue(of(docs));
       store.load();
       store.searchQuery.set('limitation');
-      expect(store.filtered().map(d => d.id).sort()).toEqual(['1', '3']);
+      expect(
+        store
+          .filtered()
+          .map(d => d.id)
+          .sort(),
+      ).toEqual(['1', '3']);
     });
   });
 
