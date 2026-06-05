@@ -17,7 +17,7 @@ import type { Sentence } from '../../core/types/api';
               [attr.aria-label]="ariaLabel()"
               [class.unlabeled-sentence]="!sentence().clause_type_id"
               [class.labeled-sentence]="!!sentence().clause_type_id"
-              class="block w-full text-left font-serif leading-relaxed py-1 px-2 -mx-2 rounded text-ink"
+              class="block w-full text-left font-serif leading-relaxed py-1 px-2 -mx-2 rounded text-ink transition-colors duration-150 focus-visible:bg-accent-soft"
               (click)="activate.emit()">
         {{ sentence().text }}
         @if (clauseName(); as name) {

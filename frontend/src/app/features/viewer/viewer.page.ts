@@ -24,7 +24,7 @@ import { ViewerHeader } from './viewer-header.component';
   template: `
     @if (store.document(); as doc) {
       <app-viewer-header [doc]="doc" [labeled]="store.labeledCount()" [total]="store.sentenceCount()" />
-      <div class="max-w-3xl mx-auto px-8 py-8 bg-surface my-6 rounded shadow-sm border border-border">
+      <div class="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-8 bg-surface my-4 md:my-6 rounded shadow-sm border border-border">
         @for (s of doc.sentences; track s.id) {
           <span #anchor="cdkOverlayOrigin" cdkOverlayOrigin>
             <app-sentence [sentence]="s" (activate)="open(s.id, anchor)" />

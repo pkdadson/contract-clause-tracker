@@ -28,7 +28,7 @@ import { UploadBus } from './shared/services/upload-bus';
         </div>
         <button type="button"
                 (click)="bus.open.set(true)"
-                class="bg-accent text-white font-medium py-2.5 px-4 rounded-md hover:opacity-90 min-h-[44px]">
+                class="bg-accent text-white font-medium py-2.5 px-4 rounded-md hover:opacity-90 transition-opacity duration-150 min-h-[44px]">
           + Upload
         </button>
         <nav class="text-sm hidden md:block">
