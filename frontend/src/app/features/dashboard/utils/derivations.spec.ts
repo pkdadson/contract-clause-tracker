@@ -5,7 +5,7 @@ const make = (overrides: Partial<DocumentListItem>): DocumentListItem => ({
   id: overrides.id ?? 'd1',
   title: overrides.title ?? 'Mutual NDA',
   party: overrides.party ?? 'Acme Co',
-  contract_type: overrides.contract_type ?? 'NDA',
+  contract_type: overrides.contract_type === undefined ? 'NDA' : overrides.contract_type,
   uploaded_at: '2026-05-01T00:00:00',
   modified_at: overrides.modified_at ?? '2026-05-10T00:00:00',
   sentence_count: 10,
@@ -105,5 +105,28 @@ describe('groupDocuments', () => {
     const payment = groups.find(g => g.key === 'payment');
     expect(liability!.documents.map(d => d.id)).toEqual(['1', '3']);
     expect(payment!.documents.map(d => d.id)).toEqual(['1']);
+  });
+
+  it('routes documents with null contract_type into an Unclassified group', () => {
+    const list = [
+      make({ id: 'a', contract_type: null }),
+      make({ id: 'b', contract_type: 'NDA' }),
+    ];
+    const groups = groupDocuments(list, 'contract-type');
+    const unclassified = groups.find(g => g.key === 'unclassified');
+    expect(unclassified?.label).toBe('Unclassified');
+    expect(unclassified?.documents.map(d => d.id)).toEqual(['a']);
+  });
+
+  it('orders groups: named types alphabetical, then Other, then Unclassified', () => {
+    const list = [
+      make({ id: '1', contract_type: 'Reseller' }),
+      make({ id: '2', contract_type: 'NDA' }),
+      make({ id: '3', contract_type: 'Other' }),
+      make({ id: '4', contract_type: null }),
+      make({ id: '5', contract_type: 'MSA' }),
+    ];
+    const keys = groupDocuments(list, 'contract-type').map(g => g.key);
+    expect(keys).toEqual(['MSA', 'NDA', 'Reseller', 'Other', 'unclassified']);
   });
 });

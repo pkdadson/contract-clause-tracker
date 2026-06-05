@@ -49,16 +49,28 @@ export function groupDocuments(
     return [{ key: 'all', label: 'All contracts', documents: [...docs] }];
   }
   if (mode === 'contract-type') {
-    const map = new Map<string, DocumentListItem[]>();
+    const named = new Map<string, DocumentListItem[]>();
+    const other: DocumentListItem[] = [];
+    const unclassified: DocumentListItem[] = [];
     for (const d of docs) {
-      const key = d.contract_type ?? 'Untyped';
-      const existing = map.get(key);
-      if (existing) existing.push(d);
-      else map.set(key, [d]);
+      if (d.contract_type === null) {
+        unclassified.push(d);
+      } else if (d.contract_type === 'Other') {
+        other.push(d);
+      } else {
+        const existing = named.get(d.contract_type);
+        if (existing) existing.push(d);
+        else named.set(d.contract_type, [d]);
+      }
     }
-    return [...map.entries()]
+    const result: DocumentGroup[] = [...named.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, documents]) => ({ key, label: key, documents }));
+    if (other.length > 0) result.push({ key: 'Other', label: 'Other', documents: other });
+    if (unclassified.length > 0) {
+      result.push({ key: 'unclassified', label: 'Unclassified', documents: unclassified });
+    }
+    return result;
   }
   const map = new Map<string, DocumentListItem[]>();
   for (const d of docs) {
