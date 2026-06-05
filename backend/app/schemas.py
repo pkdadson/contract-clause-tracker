@@ -45,6 +45,7 @@ class LabelSetRequest(BaseModel):
     clause_type_id: str = Field(min_length=1)
 
 class DocumentUpdateRequest(BaseModel):
+    model_config = {"extra": "forbid"}
     contract_type: ContractType | None
 
 class SuggestionOut(BaseModel):

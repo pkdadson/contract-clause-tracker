@@ -33,3 +33,9 @@ def test_patch_rejects_unknown_value(client):
 def test_patch_returns_404_for_unknown_document(client):
     r = client.patch("/api/documents/does-not-exist", json={"contract_type": "MSA"})
     assert r.status_code == 404
+
+
+def test_patch_rejects_extra_fields(client):
+    doc_id = _upload(client)
+    r = client.patch(f"/api/documents/{doc_id}", json={"contract_type": "NDA", "party": "x"})
+    assert r.status_code == 422
