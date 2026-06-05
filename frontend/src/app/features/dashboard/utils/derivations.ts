@@ -17,7 +17,7 @@ export function searchAndFilter(
   const q = query.trim().toLowerCase();
   return docs.filter(d => {
     if (q) {
-      const haystack = `${d.title} ${d.party ?? ''} ${d.contract_type}`.toLowerCase();
+      const haystack = `${d.title} ${d.party ?? ''} ${d.contract_type ?? ''}`.toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     if (clauseFilter.size > 0) {
@@ -51,9 +51,10 @@ export function groupDocuments(
   if (mode === 'contract-type') {
     const map = new Map<string, DocumentListItem[]>();
     for (const d of docs) {
-      const existing = map.get(d.contract_type);
+      const key = d.contract_type ?? 'Untyped';
+      const existing = map.get(key);
       if (existing) existing.push(d);
-      else map.set(d.contract_type, [d]);
+      else map.set(key, [d]);
     }
     return [...map.entries()]
       .sort(([a], [b]) => a.localeCompare(b))

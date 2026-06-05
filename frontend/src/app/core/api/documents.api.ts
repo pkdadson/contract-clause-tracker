@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import type { DocumentDetail, DocumentListItem } from '../types/api';
+import type { ContractType, DocumentDetail, DocumentListItem } from '../types/api';
 
 @Injectable({ providedIn: 'root' })
 export class DocumentsApi {
@@ -21,5 +21,12 @@ export class DocumentsApi {
     const form = new FormData();
     form.append('file', file);
     return this.http.post<DocumentDetail>(`${environment.apiBase}/documents`, form);
+  }
+
+  update(id: string, contractType: ContractType | null): Observable<DocumentDetail> {
+    return this.http.patch<DocumentDetail>(
+      `${environment.apiBase}/documents/${id}`,
+      { contract_type: contractType },
+    );
   }
 }

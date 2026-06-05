@@ -1,3 +1,6 @@
+export const CONTRACT_TYPES = ['NDA', 'MSA', 'DPA', 'Employment', 'Reseller', 'Other'] as const;
+export type ContractType = (typeof CONTRACT_TYPES)[number];
+
 export interface ClauseType {
   id: string;
   name: string;
@@ -18,7 +21,7 @@ export interface DocumentListItem {
   id: string;
   title: string;
   party: string | null;
-  contract_type: string;
+  contract_type: ContractType | null;
   uploaded_at: string;
   modified_at: string;
   sentence_count: number;
@@ -30,7 +33,7 @@ export interface DocumentDetail {
   id: string;
   title: string;
   party: string | null;
-  contract_type: string;
+  contract_type: ContractType | null;
   uploaded_at: string;
   modified_at: string;
   sentences: Sentence[];
