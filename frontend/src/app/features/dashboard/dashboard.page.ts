@@ -15,7 +15,7 @@ import type { GroupMode, SortMode } from './utils/derivations';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DocumentRowComponent, EmptyStateComponent],
   template: `
-    <div class="max-w-6xl mx-auto px-8 py-10">
+    <div class="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-10">
       <header class="mb-8">
         <h1 class="font-serif text-3xl">Contracts</h1>
         <p class="text-ink-muted mt-1">Search, filter, and group your contracts by clause type.</p>
@@ -76,7 +76,8 @@ import type { GroupMode, SortMode } from './utils/derivations';
                 <span class="tabular-nums">({{ group.documents.length }})</span>
               </h2>
             }
-            <table class="w-full bg-surface rounded border border-border overflow-hidden">
+            <div class="overflow-x-auto bg-surface rounded border border-border">
+            <table class="w-full">
               <caption class="sr-only">Contracts</caption>
               <thead class="text-left text-xs uppercase text-ink-muted tracking-wider">
                 <tr class="border-b border-border">
@@ -93,6 +94,7 @@ import type { GroupMode, SortMode } from './utils/derivations';
                 }
               </tbody>
             </table>
+            </div>
           }
         }
       }

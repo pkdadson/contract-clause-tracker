@@ -64,6 +64,7 @@ The case study capped this at 3–4 hours. The items below are deliberate deferr
 - **Virtualised sentence rendering.** For very long contracts. CDK virtual scroll is the natural fit.
 - **Bulk operations.** "Apply to similar sentences", "jump to next unlabelled" hotkey, range-select.
 - **Dark mode.** The design tokens are CSS variables; dark mode is a `prefers-color-scheme` override, not a rewrite.
-- **Mobile labelling.** The viewer would use a bottom-sheet picker on small screens.
+- **Mobile labelling.** The CDK Overlay picker is anchored per-sentence and works at narrow widths, but on phones a bottom-sheet picker would be more thumb-friendly and free up reading space.
+- **Sentence touch-target sizing.** Sentence buttons are intentionally tight (~34 px) to keep the contract reading like a document rather than a list of cards. On true touch devices that's sub-44 px; the senior trade-off was for desktop reviewers reading editorial text. A touch mode would add per-sentence padding behind a media query or pointer-type check.
 - **Auth and permissions.** Single-tenant for now. The natural extension is row-level filtering at the DB layer with the user injected via FastAPI dependency.
 - **Conflict handling on labels.** Currently last-write-wins. An ETag-on-PUT pattern would matter as soon as multiple reviewers worked the same document concurrently.

@@ -15,22 +15,27 @@ import { UploadBus } from './shared/services/upload-bus';
     <a class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:bg-surface focus:text-ink focus:px-3 focus:py-2 focus:rounded-md focus:shadow"
        href="#main">Skip to main content</a>
 
-    <div class="grid grid-cols-[260px_1fr] min-h-dvh">
-      <aside class="bg-surface border-r border-border px-4 py-6 flex flex-col gap-6">
-        <div>
+    <div class="flex flex-col md:grid md:grid-cols-[260px_1fr] min-h-dvh">
+      <aside class="bg-surface border-b md:border-b-0 md:border-r border-border
+                    px-4 py-3 md:py-6
+                    flex flex-row md:flex-col
+                    items-center md:items-stretch
+                    justify-between md:justify-start
+                    gap-3 md:gap-6">
+        <div class="flex items-baseline gap-2 md:block">
           <div class="font-sans font-bold text-lg tracking-tight">Clause Tracker</div>
-          <div class="text-ink-muted text-xs mt-0.5">Contract review</div>
+          <div class="text-ink-muted text-xs md:mt-0.5">Contract review</div>
         </div>
         <button type="button"
                 (click)="bus.open.set(true)"
-                class="bg-accent text-white font-medium py-2 px-3 rounded-md hover:opacity-90">
+                class="bg-accent text-white font-medium py-2.5 px-4 rounded-md hover:opacity-90 min-h-[44px]">
           + Upload
         </button>
-        <nav class="text-sm">
+        <nav class="text-sm hidden md:block">
           <div class="text-ink-muted text-[11px] uppercase tracking-wider font-medium mb-2">Workspace</div>
           <a routerLink="/" routerLinkActive="bg-accent-soft text-ink font-medium"
              [routerLinkActiveOptions]="{ exact: true }"
-             class="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent-soft/60">
+             class="flex items-center justify-between px-2 py-2 rounded-md hover:bg-accent-soft/60">
             <span>Contracts</span>
             <span class="text-xs tabular-nums text-ink-muted">{{ docs.all().length }}</span>
           </a>
