@@ -38,7 +38,11 @@ WCAG 2.2 AA target. The picker is an ARIA combobox with `aria-controls`, `aria-e
 ## Testing
 
 - **Backend** — pytest covers upload (txt accepted, oversize rejected, bad extension rejected), label set/clear, and the list endpoint's embedded counts.
-- **Frontend unit** — Karma + Jasmine. Pure derivations (`searchAndFilter`, `sortDocuments`, `groupDocuments`) and the clause picker (keyboard nav, search filtering, Backspace remove guarded by empty query, Escape cancel).
+- **Frontend** — Karma + Jasmine, 52 specs across four layers:
+  - *Pure functions* — `searchAndFilter`, `sortDocuments`, `groupDocuments`.
+  - *Stores* — `DocumentsStore` (load, search → filter → sort → group pipeline composition, upsert) and `DocumentDetailStore` (404 vs error, optimistic set/clear with rollback on API failure, no-op when no document is loaded).
+  - *HTTP services* — `DocumentsApi`, `LabelsApi`, `ClauseTypesApi` against `HttpTestingController` to lock the URL, method, and request body of every call.
+  - *Component DOM* — `ClausePicker` (combobox ARIA wiring, `aria-activedescendant` tracking, listbox structure), `ClauseChip`, and `ProgressRing`.
 - **E2E** — deferred. The natural happy path (upload → label → see the label on the dashboard) is a Playwright stretch I'd add next if I had another hour.
 
 ```bash
