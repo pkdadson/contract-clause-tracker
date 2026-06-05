@@ -73,6 +73,8 @@ const TYPE_LABEL: Record<ContractType, string> = {
             [value]="doc().contract_type ?? ''"
             (change)="onTypeChange($event)"
             (click)="$event.stopPropagation()"
+            (mousedown)="$event.stopPropagation()"
+            (keydown)="$event.stopPropagation()"
           >
             <option value="">Unclassified</option>
             @for (t of types; track t) {

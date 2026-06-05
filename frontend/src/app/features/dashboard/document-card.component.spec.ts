@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { DocumentsStore } from '../../core/stores/documents.store';
-import type { DocumentListItem } from '../../core/types/api';
+import type { ContractType, DocumentListItem } from '../../core/types/api';
 import { DocumentCardComponent } from './document-card.component';
 
 const make = (overrides: Partial<DocumentListItem>): DocumentListItem => ({
@@ -18,7 +18,7 @@ const make = (overrides: Partial<DocumentListItem>): DocumentListItem => ({
 });
 
 interface StoreMock {
-  setContractType: jasmine.Spy<(id: string, value: string | null) => void>;
+  setContractType: jasmine.Spy<(id: string, value: ContractType | null) => void>;
 }
 
 const render = (doc: DocumentListItem) => {
