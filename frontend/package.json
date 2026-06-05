@@ -27,6 +27,7 @@
     "@angular/cdk": "^17.3.10",
     "@angular/cli": "^17.3.17",
     "@angular/compiler-cli": "^17.3.0",
+    "@playwright/test": "^1.60.0",
     "@types/jasmine": "~5.1.0",
     "autoprefixer": "^10.5.0",
     "jasmine-core": "~5.1.0",

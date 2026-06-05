@@ -129,6 +129,7 @@ export class DashboardPage implements OnInit {
     );
     this.store.grouping.set((p.get('group') as GroupMode) ?? 'none');
     this.store.sort.set((p.get('sort') as SortMode) ?? 'modified-desc');
+    this.store.load();
   }
 
   onSearch(event: Event): void {

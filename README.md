@@ -46,11 +46,12 @@ WCAG 2.2 AA target. The picker is an ARIA combobox with `aria-controls`, `aria-e
   - *Stores* — `DocumentsStore` (load, search → filter → sort → group pipeline composition, upsert) and `DocumentDetailStore` (404 vs error, optimistic set/clear with rollback on API failure, no-op when no document is loaded).
   - *HTTP services* — `DocumentsApi`, `LabelsApi`, `ClauseTypesApi` against `HttpTestingController` to lock the URL, method, and request body of every call.
   - *Component DOM* — `ClausePicker` (combobox ARIA wiring, `aria-activedescendant` tracking, listbox structure), `ClauseChip`, and `ProgressRing`.
-- **E2E** — deferred. The natural happy path (upload → label → see the label on the dashboard) is a Playwright stretch I'd add next if I had another hour.
+- **E2E** — one Playwright spec covers the natural happy path: upload a contract, label the first sentence via the picker, navigate back to the dashboard, see the label on the row. Drives the real backend.
 
 ```bash
 cd backend && pytest
 cd frontend && npm test -- --watch=false
+cd frontend && npx playwright test     # backend + dev server must be running
 ```
 
 ## Future work
