@@ -64,11 +64,26 @@ import { ViewerHeader } from './viewer-header.component';
         <p class="text-danger" role="alert">{{ store.error() }}</p>
       </div>
     } @else if (store.loading()) {
-      <div class="max-w-3xl mx-auto px-8 py-10 space-y-3" aria-busy="true">
-        @for (n of [1, 2, 3, 4, 5]; track n) {
+      <header
+        class="bg-surface border-b border-border px-4 md:px-8 py-3 md:py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20"
+        aria-busy="true"
+        aria-label="Loading contract"
+      >
+        <div class="h-5 w-24 bg-sunken rounded animate-pulse"></div>
+        <div class="grow space-y-2 max-w-[260px]">
+          <div class="h-5 w-48 bg-sunken rounded animate-pulse"></div>
+          <div class="h-3 w-32 bg-sunken rounded animate-pulse"></div>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-sunken animate-pulse"></div>
+        <div class="h-3 w-40 bg-sunken rounded animate-pulse"></div>
+      </header>
+      <div
+        class="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-8 bg-surface my-4 md:my-6 rounded shadow-sm border border-border space-y-3"
+      >
+        @for (n of [1, 2, 3, 4, 5, 6, 7, 8]; track n) {
           <div
-            class="h-4 bg-surface rounded animate-pulse"
-            [style.width.%]="60 + (n % 3) * 15"
+            class="h-4 bg-sunken rounded animate-pulse"
+            [style.width.%]="60 + (n % 4) * 12"
           ></div>
         }
       </div>

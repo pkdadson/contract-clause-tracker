@@ -37,7 +37,16 @@ export class DocumentDetailStore {
   );
   readonly sentenceCount = computed(() => this.bodySentences().length);
 
+  upsert(doc: DocumentDetail): void {
+    this.cancelLoad$.next();
+    this._document.set(doc);
+    this._loading.set(false);
+    this._error.set(null);
+    this._notFound.set(false);
+  }
+
   load(id: string): void {
+    if (this._document()?.id === id) return;
     this.cancelLoad$.next();
     this._loading.set(true);
     this._error.set(null);

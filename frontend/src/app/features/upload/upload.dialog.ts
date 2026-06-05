@@ -13,6 +13,7 @@ import {
 import { Router } from '@angular/router';
 
 import { DocumentsApi } from '../../core/api/documents.api';
+import { DocumentDetailStore } from '../../core/stores/document-detail.store';
 import { DocumentsStore } from '../../core/stores/documents.store';
 
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -113,6 +114,7 @@ export class UploadDialog implements AfterViewInit, OnDestroy {
 
   private api = inject(DocumentsApi);
   private store = inject(DocumentsStore);
+  private detailStore = inject(DocumentDetailStore);
   private router = inject(Router);
 
   uploading = signal(false);
@@ -176,6 +178,7 @@ export class UploadDialog implements AfterViewInit, OnDestroy {
     this.api.upload(file).subscribe({
       next: doc => {
         this.uploading.set(false);
+        this.detailStore.upsert(doc);
         this.store.load();
         this.close.emit();
         this.router.navigate(['/documents', doc.id]);

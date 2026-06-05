@@ -223,6 +223,34 @@ describe('DocumentDetailStore', () => {
     });
   });
 
+  describe('upsert — prime from a known source (e.g. the upload response)', () => {
+    it('sets the document and clears loading without hitting the API', () => {
+      const { store, docsApi } = setup();
+      store.upsert(doc({ id: 'primed' }));
+      expect(store.document()?.id).toBe('primed');
+      expect(store.loading()).toBeFalse();
+      expect(docsApi.get).not.toHaveBeenCalled();
+    });
+
+    it('makes a subsequent load(sameId) a no-op so the viewer renders instantly', () => {
+      const { store, docsApi } = setup();
+      store.upsert(doc({ id: 'primed' }));
+      store.load('primed');
+      expect(docsApi.get).not.toHaveBeenCalled();
+      expect(store.loading()).toBeFalse();
+      expect(store.document()?.id).toBe('primed');
+    });
+
+    it('does NOT short-circuit when load() is called with a different id', () => {
+      const { store, docsApi } = setup();
+      store.upsert(doc({ id: 'primed' }));
+      docsApi.get.and.returnValue(of(doc({ id: 'other' })));
+      store.load('other');
+      expect(docsApi.get).toHaveBeenCalledWith('other');
+      expect(store.document()?.id).toBe('other');
+    });
+  });
+
   describe('rapid load cancels the prior in-flight request', () => {
     it('drops a stale document response when a second load arrives before it resolves', () => {
       const { store, docsApi } = setup();
