@@ -7,7 +7,7 @@ import { DocumentsStore } from '../../core/stores/documents.store';
 import { UploadBus } from '../../shared/services/upload-bus';
 import { DocumentCardComponent } from './document-card.component';
 import { EmptyStateComponent } from './empty-state.component';
-import type { GroupMode, SortMode } from './utils/derivations';
+import type { DocumentGroup, GroupMode, SortMode } from './utils/derivations';
 
 @Component({
   selector: 'app-dashboard',
@@ -119,7 +119,7 @@ import type { GroupMode, SortMode } from './utils/derivations';
               <div class="flex items-center gap-3 mt-6 mb-2.5">
                 <span class="text-sm font-semibold text-ink">
                   {{ store.grouping() === 'clause-type' ? 'Documents containing ' : ''
-                  }}{{ groupLabel(group.key) }}
+                  }}{{ groupLabel(group) }}
                 </span>
                 <span
                   class="text-[11px] font-mono tabular-nums bg-sunken text-ink-faint px-2 py-0.5 rounded-full"
@@ -206,9 +206,9 @@ export class DashboardPage implements OnInit {
     this.bus.open.set(true);
   }
 
-  groupLabel(key: string): string {
-    const ct = this.clauseTypes.types().find(t => t.id === key);
-    return ct ? ct.name : key;
+  groupLabel(group: DocumentGroup): string {
+    const ct = this.clauseTypes.types().find(t => t.id === group.key);
+    return ct ? ct.name : group.label;
   }
 
   private _syncUrl(patch: Record<string, string | null>): void {
