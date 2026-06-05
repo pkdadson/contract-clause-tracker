@@ -1,5 +1,7 @@
 # Contract Clause Tracker
 
+![CI](https://github.com/pkdadson/contract-clause-tracker/actions/workflows/ci.yml/badge.svg?branch=main)
+
 A small web app for labelling legal clauses sentence-by-sentence across a contract library. Built as a take-home for Legartis.
 
 ## Running it
@@ -20,6 +22,35 @@ The case study asked for three things and I built exactly that: upload a contrac
 
 **Frontend — Angular 17, signals, CDK Overlay.** Standalone components throughout. The dashboard's search / filter / grouping / sort state is bound to the URL query string, so any view is bookmarkable and shareable. The viewer's labelling popover is a CDK ConnectedOverlay anchored to the clicked sentence, implementing the ARIA combobox pattern: typeable search, arrow navigation, Enter applies, Backspace removes when the query is empty, Escape closes. Label changes are optimistic against the local signal and roll back on API failure.
 
+### The labelling round-trip
+
+The critical interaction in the app — the part I'd want to be inspected in a code review — is the optimistic-with-rollback path. It's the same sequence whether the user accepts an AI suggestion (future work) or applies a manual label:
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Picker
+    participant Store as DocumentDetailStore
+    participant API as LabelsApi
+    participant Server
+
+    User->>Picker: click sentence, search "payment", Enter
+    Picker->>Store: setLabel(sentenceId, "payment", onError)
+    Store->>Store: snapshot original, patch signal
+    Note over Store: UI reflects label instantly
+    Store->>API: PUT /sentences/{id}/label
+    API->>Server: HTTP request
+    alt success
+        Server-->>Store: 200
+        Store->>Store: clear in-flight record
+    else failure
+        Server-->>Store: 4xx / network
+        Store->>Store: rollback to snapshot, call onError
+    end
+```
+
+The non-obvious detail is the *snapshot*. On rapid re-clicks of the same sentence, the second call doesn't capture the optimistic intermediate value — it preserves the *original* pre-action label, so any rollback unwinds to the true starting state rather than a half-applied one. Covered by [`document-detail.store.spec.ts`](frontend/src/app/core/stores/document-detail.store.spec.ts) (the `setLabel — rapid concurrent calls` block).
+
 ### Why these choices
 
 - **SQLite over Postgres.** No concurrency, ops, or vendor extensions needed at this scale. One fewer service in the compose file, one less thing to defend.
@@ -34,7 +65,7 @@ The case study asked for three things and I built exactly that: upload a contrac
 
 ## Accessibility
 
-WCAG 2.2 AA target. The picker is an ARIA combobox with `aria-controls`, `aria-expanded`, and `aria-activedescendant` wiring; focus stays on the search input while arrow keys move the highlight, then returns to the activating sentence on close. Sentences are real buttons, tabbable in document order, with `aria-label` describing the current label state. Label set/remove announce through a polite live region. Colour is paired with text everywhere — no colour-only signals. Every page has a skip-to-main-content link.
+**Target: WCAG 2.2 AA.** Verified by hand on a keyboard-only walkthrough — Tab through Upload → search → grouping → sort → row → viewer → sentences → picker → close, every step is reachable and announces what it does. The picker is an ARIA combobox with `aria-controls`, `aria-expanded`, and `aria-activedescendant` wiring; focus stays on the search input while arrow keys move the highlight, then returns to the activating sentence on close. Sentences are real buttons, tabbable in document order, with `aria-label` describing the current label state. Label set/remove announce through a polite live region. Colour is paired with text everywhere — no colour-only signals. Every page has a skip-to-main-content link.
 
 **Keyboard walk-through.** Tab through Upload → search → grouping toggle → sort → each row. Enter on a row opens the viewer. Tab through sentences. Enter on a sentence opens the picker; type to filter, ↑/↓ to navigate, Enter to apply, Backspace (with empty query) to remove the current label, Escape to close. Focus returns to the sentence.
 
