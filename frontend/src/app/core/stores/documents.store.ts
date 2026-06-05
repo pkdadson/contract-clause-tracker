@@ -75,6 +75,20 @@ export class DocumentsStore {
       return copy;
     });
     this.api.update(documentId, value).subscribe({
+      next: detail => {
+        this._documents.update(curr => {
+          const copy = [...curr];
+          const i = copy.findIndex(d => d.id === documentId);
+          if (i !== -1) {
+            copy[i] = {
+              ...copy[i]!,
+              contract_type: detail.contract_type,
+              modified_at: detail.modified_at,
+            };
+          }
+          return copy;
+        });
+      },
       error: () => {
         this._documents.update(curr => {
           const copy = [...curr];

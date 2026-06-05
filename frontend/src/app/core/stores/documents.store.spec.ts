@@ -175,5 +175,27 @@ describe('DocumentsStore', () => {
       store.setContractType('missing', 'MSA');
       expect(api.update).not.toHaveBeenCalled();
     });
+
+    it('reconciles modified_at from the server response on success', () => {
+      const { store, api } = setup();
+      api.list.and.returnValue(
+        of([make({ id: 'd1', contract_type: null, modified_at: '2026-05-10T00:00:00' })]),
+      );
+      store.load();
+      api.update.and.returnValue(
+        of({
+          id: 'd1',
+          title: 'Mutual NDA',
+          party: null,
+          contract_type: 'MSA',
+          uploaded_at: '2026-05-01T00:00:00',
+          modified_at: '2026-06-05T15:00:00',
+          sentences: [],
+        }),
+      );
+      store.setContractType('d1', 'MSA');
+      expect(store.all()[0]!.contract_type).toBe('MSA');
+      expect(store.all()[0]!.modified_at).toBe('2026-06-05T15:00:00');
+    });
   });
 });
