@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .routers import clause_types, documents, health, labels, suggestions
+
 app = FastAPI(
     title="Clause Tracker API",
     docs_url="/api/docs",
@@ -14,7 +16,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+for router in (
+    health.router,
+    clause_types.router,
+    documents.router,
+    labels.router,
+    suggestions.router,
+):
+    app.include_router(router)
