@@ -10,9 +10,11 @@ import { ChangeDetectionStrategy, Component, output } from '@angular/core';
       <p class="text-ink-muted max-w-sm">
         Upload your first contract to start labelling clauses by sentence.
       </p>
-      <button type="button"
-              (click)="upload.emit()"
-              class="bg-accent text-white font-medium px-4 py-2 rounded-md hover:opacity-90">
+      <button
+        type="button"
+        (click)="upload.emit()"
+        class="bg-accent text-white font-medium px-4 py-2 rounded-md hover:opacity-90"
+      >
         Upload your first contract
       </button>
     </div>

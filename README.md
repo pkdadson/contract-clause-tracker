@@ -46,13 +46,17 @@ WCAG 2.2 AA target. The picker is an ARIA combobox with `aria-controls`, `aria-e
   - *Stores* — `DocumentsStore` (load, search → filter → sort → group pipeline composition, upsert) and `DocumentDetailStore` (404 vs error, optimistic set/clear with rollback on API failure, no-op when no document is loaded).
   - *HTTP services* — `DocumentsApi`, `LabelsApi`, `ClauseTypesApi` against `HttpTestingController` to lock the URL, method, and request body of every call.
   - *Component DOM* — `ClausePicker` (combobox ARIA wiring, `aria-activedescendant` tracking, listbox structure), `ClauseChip`, and `ProgressRing`.
-- **E2E** — one Playwright spec covers the natural happy path: upload a contract, label the first sentence via the picker, navigate back to the dashboard, see the label on the row. Drives the real backend.
+- **E2E** — three Playwright specs: the happy path (upload → label → see on dashboard), plus two negative paths (unsupported extension rejected with `role="alert"`, oversize file rejected with the size in the message). All drive the real backend.
 
 ```bash
 cd backend && pytest
-cd frontend && npm test -- --watch=false
+cd frontend && npm run lint
+cd frontend && npm run format:check
+cd frontend && npm run test:ci
 cd frontend && npx playwright test     # backend + dev server must be running
 ```
+
+CI runs all of the above on every push and pull request via `.github/workflows/ci.yml` — backend pytest, frontend lint + format + unit + production build, and Playwright as a separate job that boots both servers and waits for them before running.
 
 ## Future work
 

@@ -24,43 +24,56 @@ export type PickerEvent =
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="bg-surface rounded-lg shadow-xl border border-border w-[360px] max-h-[460px] flex flex-col overflow-hidden"
-         (keydown)="onKey($event)">
+    <div
+      class="bg-surface rounded-lg shadow-xl border border-border w-[360px] max-h-[460px] flex flex-col overflow-hidden"
+      (keydown)="onKey($event)"
+    >
       <div class="px-3 py-2 border-b border-border">
         <span id="picker-title" class="sr-only">Pick a clause type</span>
-        <input #searchInput
-               type="text"
-               role="combobox"
-               aria-autocomplete="list"
-               aria-expanded="true"
-               aria-controls="picker-listbox"
-               aria-labelledby="picker-title"
-               [attr.aria-activedescendant]="activeId() ? 'opt-' + activeId() : null"
-               [value]="query()"
-               (input)="onSearchInput($event)"
-               placeholder="Search clause types…"
-               class="w-full bg-canvas border border-border rounded px-2 py-1.5 text-sm" />
+        <input
+          #searchInput
+          type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="true"
+          aria-controls="picker-listbox"
+          aria-labelledby="picker-title"
+          [attr.aria-activedescendant]="activeId() ? 'opt-' + activeId() : null"
+          [value]="query()"
+          (input)="onSearchInput($event)"
+          placeholder="Search clause types…"
+          class="w-full bg-canvas border border-border rounded px-2 py-1.5 text-sm"
+        />
       </div>
 
       @if (currentLabel(); as cur) {
-        <button type="button"
-                class="text-left text-sm text-danger px-3 py-2 border-b border-border hover:bg-canvas"
-                (mousedown)="picked.emit({ kind: 'remove' })">
-          Remove label (currently <span class="font-medium">{{ cur.name }}</span>)
+        <button
+          type="button"
+          class="text-left text-sm text-danger px-3 py-2 border-b border-border hover:bg-canvas"
+          (mousedown)="picked.emit({ kind: 'remove' })"
+        >
+          Remove label (currently
+          <span class="font-medium">{{ cur.name }}</span>
+          )
         </button>
       }
 
       <ul id="picker-listbox" role="listbox" class="overflow-auto" style="max-height: 320px;">
         @for (t of visible(); track t.id; let i = $index) {
-          <li [id]="'opt-' + t.id"
-              role="option"
-              [attr.aria-selected]="i === active()"
-              [class.bg-accent-soft]="i === active()"
-              class="px-3 py-2 cursor-pointer hover:bg-accent-soft"
-              (mousedown)="picked.emit({ kind: 'set', clauseTypeId: t.id })"
-              (mouseenter)="active.set(i)">
+          <li
+            [id]="'opt-' + t.id"
+            role="option"
+            [attr.aria-selected]="i === active()"
+            [class.bg-accent-soft]="i === active()"
+            class="px-3 py-2 cursor-pointer hover:bg-accent-soft"
+            (mousedown)="picked.emit({ kind: 'set', clauseTypeId: t.id })"
+            (mouseenter)="active.set(i)"
+          >
             <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full" [style.background]="'var(' + t.color_token + ')'"></span>
+              <span
+                class="w-2 h-2 rounded-full"
+                [style.background]="'var(' + t.color_token + ')'"
+              ></span>
               <span class="font-medium text-sm">{{ t.name }}</span>
             </div>
             <p class="text-xs text-ink-muted ml-4 mt-0.5">{{ t.description }}</p>
@@ -71,10 +84,15 @@ export type PickerEvent =
         }
       </ul>
 
-      <footer class="px-3 py-1.5 border-t border-border bg-canvas/50 text-[11px] text-ink-muted font-mono">
-        <kbd class="px-1 bg-surface border border-border rounded">↵</kbd> apply
-        · <kbd class="px-1 bg-surface border border-border rounded">⌫</kbd> remove
-        · <kbd class="px-1 bg-surface border border-border rounded">esc</kbd> close
+      <footer
+        class="px-3 py-1.5 border-t border-border bg-canvas/50 text-[11px] text-ink-muted font-mono"
+      >
+        <kbd class="px-1 bg-surface border border-border rounded">↵</kbd>
+        apply ·
+        <kbd class="px-1 bg-surface border border-border rounded">⌫</kbd>
+        remove ·
+        <kbd class="px-1 bg-surface border border-border rounded">esc</kbd>
+        close
       </footer>
     </div>
   `,

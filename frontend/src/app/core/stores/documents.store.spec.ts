@@ -52,9 +52,27 @@ describe('DocumentsStore', () => {
 
   describe('reactive pipeline', () => {
     const docs = [
-      make({ id: '1', title: 'Northwind MSA', contract_type: 'MSA', clause_types_present: ['liability'], modified_at: '2026-05-01' }),
-      make({ id: '2', title: 'Helios NDA',    contract_type: 'NDA', clause_types_present: ['confidential'], modified_at: '2026-05-10' }),
-      make({ id: '3', title: 'Apollo MSA',    contract_type: 'MSA', clause_types_present: ['liability', 'payment'], modified_at: '2026-05-05' }),
+      make({
+        id: '1',
+        title: 'Northwind MSA',
+        contract_type: 'MSA',
+        clause_types_present: ['liability'],
+        modified_at: '2026-05-01',
+      }),
+      make({
+        id: '2',
+        title: 'Helios NDA',
+        contract_type: 'NDA',
+        clause_types_present: ['confidential'],
+        modified_at: '2026-05-10',
+      }),
+      make({
+        id: '3',
+        title: 'Apollo MSA',
+        contract_type: 'MSA',
+        clause_types_present: ['liability', 'payment'],
+        modified_at: '2026-05-05',
+      }),
     ];
 
     it('reflects search query changes downstream', () => {

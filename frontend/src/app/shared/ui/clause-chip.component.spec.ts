@@ -6,7 +6,13 @@ import type { ClauseType } from '../../core/types/api';
 import { ClauseChipComponent } from './clause-chip.component';
 
 const TYPES: ClauseType[] = [
-  { id: 'liability', name: 'Limitation of Liability', description: '', color_token: '--c-liability', sort_order: 1 },
+  {
+    id: 'liability',
+    name: 'Limitation of Liability',
+    description: '',
+    color_token: '--c-liability',
+    sort_order: 1,
+  },
 ];
 
 describe('ClauseChipComponent', () => {

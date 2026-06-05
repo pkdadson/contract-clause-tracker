@@ -8,12 +8,22 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
     <div class="inline-flex items-center gap-2" [attr.aria-label]="ariaLabel()">
       <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
         <circle cx="11" cy="11" r="9" stroke="var(--border)" stroke-width="2" fill="none" />
-        <circle cx="11" cy="11" r="9" stroke="var(--accent)" stroke-width="2" fill="none"
-                stroke-linecap="round" transform="rotate(-90 11 11)"
-                [attr.stroke-dasharray]="circumference"
-                [attr.stroke-dashoffset]="offset()" />
+        <circle
+          cx="11"
+          cy="11"
+          r="9"
+          stroke="var(--accent)"
+          stroke-width="2"
+          fill="none"
+          stroke-linecap="round"
+          transform="rotate(-90 11 11)"
+          [attr.stroke-dasharray]="circumference"
+          [attr.stroke-dashoffset]="offset()"
+        />
       </svg>
-      <span class="text-xs text-ink-muted tabular-nums font-mono">{{ labeled() }}/{{ total() }}</span>
+      <span class="text-xs text-ink-muted tabular-nums font-mono">
+        {{ labeled() }}/{{ total() }}
+      </span>
     </div>
   `,
 })

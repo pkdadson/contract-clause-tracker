@@ -15,7 +15,10 @@ test('upload a contract, label the first sentence, see the label on the dashboar
   try {
     await page.goto('/');
 
-    await page.getByRole('button', { name: /upload/i }).first().click();
+    await page
+      .getByRole('button', { name: /upload/i })
+      .first()
+      .click();
     await page.setInputFiles('input[type="file"]', fixture);
 
     await page.waitForURL(/\/documents\//, { timeout: 10_000 });
@@ -34,7 +37,10 @@ test('upload a contract, label the first sentence, see the label on the dashboar
 
     await expect(firstSentence).toContainText('Payment Terms');
 
-    await page.getByRole('link', { name: /contracts/i }).first().click();
+    await page
+      .getByRole('link', { name: /contracts/i })
+      .first()
+      .click();
     await expect(page).toHaveURL(/\/$|\/\?/);
 
     await expect(page.locator('app-document-card').first()).toContainText('Payment Terms');

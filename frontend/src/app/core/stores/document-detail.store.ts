@@ -102,7 +102,7 @@ export class DocumentDetailStore {
     }
     const original = existing
       ? existing.original
-      : doc.sentences.find(s => s.id === sentenceId)?.clause_type_id ?? null;
+      : (doc.sentences.find(s => s.id === sentenceId)?.clause_type_id ?? null);
     const next: LabelInflight = { original, cancel: new Subject<void>() };
     this.labelInflight.set(sentenceId, next);
     return next;

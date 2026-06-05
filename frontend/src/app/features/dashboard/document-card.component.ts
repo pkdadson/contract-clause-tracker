@@ -19,16 +19,22 @@ const TYPE_LABEL: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, ClauseChipComponent],
   template: `
-    <a [routerLink]="['/documents', doc().id]"
-       class="block bg-surface border border-border rounded-md px-4 py-4 hover:border-border-strong hover:shadow-md transition-all duration-150 focus-visible:border-accent focus-visible:shadow-md">
+    <a
+      [routerLink]="['/documents', doc().id]"
+      class="block bg-surface border border-border rounded-md px-4 py-4 hover:border-border-strong hover:shadow-md transition-all duration-150 focus-visible:border-accent focus-visible:shadow-md"
+    >
       <div class="grid grid-cols-[44px_1fr_auto] gap-4 items-center">
-        <div class="w-11 h-12 rounded-md bg-sunken border border-border grid place-items-center text-[10px] font-sans font-bold tracking-wide text-ink-muted"
-             aria-hidden="true">
+        <div
+          class="w-11 h-12 rounded-md bg-sunken border border-border grid place-items-center text-[10px] font-sans font-bold tracking-wide text-ink-muted"
+          aria-hidden="true"
+        >
           {{ typeLabel() }}
         </div>
 
         <div class="min-w-0">
-          <div class="font-sans font-semibold text-[15px] tracking-tight text-ink truncate">{{ doc().title }}</div>
+          <div class="font-sans font-semibold text-[15px] tracking-tight text-ink truncate">
+            {{ doc().title }}
+          </div>
           <div class="flex items-center gap-2 mt-1 text-xs text-ink-faint truncate">
             @if (doc().party) {
               <span class="truncate max-w-[180px]">{{ doc().party }}</span>
@@ -44,7 +50,11 @@ const TYPE_LABEL: Record<string, string> = {
                 <app-clause-chip [clauseTypeId]="cid" />
               }
               @if (hiddenChipCount() > 0) {
-                <span class="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-md bg-sunken text-ink-muted">+{{ hiddenChipCount() }}</span>
+                <span
+                  class="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-md bg-sunken text-ink-muted"
+                >
+                  +{{ hiddenChipCount() }}
+                </span>
               }
             </div>
           } @else {
@@ -53,14 +63,18 @@ const TYPE_LABEL: Record<string, string> = {
         </div>
 
         <div class="flex flex-col items-end gap-1.5 min-w-[120px]">
-          <div class="w-[120px] h-1.5 bg-sunken rounded-full overflow-hidden"
-               role="progressbar"
-               [attr.aria-label]="progressLabel()"
-               [attr.aria-valuenow]="doc().labeled_count"
-               [attr.aria-valuemin]="0"
-               [attr.aria-valuemax]="doc().sentence_count">
-            <div class="h-full bg-accent rounded-full transition-[width] duration-500"
-                 [style.width.%]="progressPct()"></div>
+          <div
+            class="w-[120px] h-1.5 bg-sunken rounded-full overflow-hidden"
+            role="progressbar"
+            [attr.aria-label]="progressLabel()"
+            [attr.aria-valuenow]="doc().labeled_count"
+            [attr.aria-valuemin]="0"
+            [attr.aria-valuemax]="doc().sentence_count"
+          >
+            <div
+              class="h-full bg-accent rounded-full transition-[width] duration-500"
+              [style.width.%]="progressPct()"
+            ></div>
           </div>
           <div class="text-[11px] text-ink-faint tabular-nums font-mono">
             {{ doc().labeled_count }}/{{ doc().sentence_count }}

@@ -1,15 +1,8 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 
-import {
-  type ApiError,
-  httpErrorInterceptor,
-  httpRetryInterceptor,
-} from './interceptors';
+import { type ApiError, httpErrorInterceptor, httpRetryInterceptor } from './interceptors';
 
 describe('httpRetryInterceptor', () => {
   let http: HttpClient;
@@ -98,10 +91,12 @@ describe('httpErrorInterceptor', () => {
   it('normalizes HttpErrorResponse into ApiError, using detail when present', () => {
     let captured: ApiError | null = null;
     http.get('/labels').subscribe({ error: e => (captured = e) });
-    controller.expectOne('/labels').flush(
-      { detail: 'sentence is a heading' },
-      { status: 422, statusText: 'Unprocessable Entity' },
-    );
+    controller
+      .expectOne('/labels')
+      .flush(
+        { detail: 'sentence is a heading' },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
     expect(captured!.status).toBe(422);
     expect(captured!.message).toBe('sentence is a heading');
     expect(captured!.isNetworkError).toBeFalse();
@@ -110,7 +105,9 @@ describe('httpErrorInterceptor', () => {
   it('flags status 0 responses as network errors', () => {
     let captured: ApiError | null = null;
     http.get('/labels').subscribe({ error: e => (captured = e) });
-    controller.expectOne('/labels').error(new ProgressEvent('error'), { status: 0, statusText: '' });
+    controller
+      .expectOne('/labels')
+      .error(new ProgressEvent('error'), { status: 0, statusText: '' });
     expect(captured!.status).toBe(0);
     expect(captured!.isNetworkError).toBeTrue();
   });

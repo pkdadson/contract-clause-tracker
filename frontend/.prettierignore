@@ -1,0 +1,8 @@
+dist/
+.angular/
+node_modules/
+coverage/
+package-lock.json
+test-results/
+playwright-report/
+.playwright-mcp/

@@ -154,14 +154,20 @@ describe('DocumentDetailStore', () => {
       expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('payment');
 
       store.setLabel('s3', 'indemnity', onError2);
-      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('indemnity');
+      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe(
+        'indemnity',
+      );
 
       second.error(new Error('boom'));
-      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('liability');
+      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe(
+        'liability',
+      );
       expect(onError2).toHaveBeenCalledTimes(1);
 
       first.next(sentence({ id: 's3', clause_type_id: 'payment' }));
-      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('liability');
+      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe(
+        'liability',
+      );
       expect(onError1).not.toHaveBeenCalled();
     });
 

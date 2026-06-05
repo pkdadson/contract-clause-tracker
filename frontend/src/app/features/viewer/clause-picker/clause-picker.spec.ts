@@ -25,9 +25,7 @@ const FAKE_TYPES: ClauseType[] = [
 describe('ClausePicker', () => {
   beforeEach(() =>
     TestBed.configureTestingModule({
-      providers: [
-        { provide: ClauseTypesStore, useValue: { types: signal(FAKE_TYPES) } },
-      ],
+      providers: [{ provide: ClauseTypesStore, useValue: { types: signal(FAKE_TYPES) } }],
     }),
   );
 

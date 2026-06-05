@@ -15,8 +15,20 @@ const make = (overrides: Partial<DocumentListItem>): DocumentListItem => ({
 
 describe('searchAndFilter', () => {
   const docs = [
-    make({ id: '1', title: 'Northwind MSA', party: 'Northwind GmbH', contract_type: 'MSA', clause_types_present: ['liability'] }),
-    make({ id: '2', title: 'Helios NDA',    party: 'Helios Labs',    contract_type: 'NDA', clause_types_present: ['confidential'] }),
+    make({
+      id: '1',
+      title: 'Northwind MSA',
+      party: 'Northwind GmbH',
+      contract_type: 'MSA',
+      clause_types_present: ['liability'],
+    }),
+    make({
+      id: '2',
+      title: 'Helios NDA',
+      party: 'Helios Labs',
+      contract_type: 'NDA',
+      clause_types_present: ['confidential'],
+    }),
   ];
 
   it('matches title case-insensitively', () => {
@@ -47,8 +59,8 @@ describe('searchAndFilter', () => {
 describe('sortDocuments', () => {
   const docs = [
     make({ id: '1', title: 'Charlie', modified_at: '2026-05-01T00:00:00' }),
-    make({ id: '2', title: 'Alpha',   modified_at: '2026-05-10T00:00:00' }),
-    make({ id: '3', title: 'Bravo',   modified_at: '2026-05-05T00:00:00' }),
+    make({ id: '2', title: 'Alpha', modified_at: '2026-05-10T00:00:00' }),
+    make({ id: '3', title: 'Bravo', modified_at: '2026-05-05T00:00:00' }),
   ];
 
   it('sorts by modified date descending by default', () => {

@@ -1,9 +1,4 @@
-import {
-  HttpErrorResponse,
-  HttpEvent,
-  HttpHandlerFn,
-  HttpRequest,
-} from '@angular/common/http';
+import { HttpErrorResponse, HttpEvent, HttpHandlerFn, HttpRequest } from '@angular/common/http';
 import { Observable, catchError, retry, throwError, timer } from 'rxjs';
 
 export interface ApiError {
@@ -50,9 +45,7 @@ export function httpErrorInterceptor(
         const normalized: ApiError = {
           status: err.status,
           message:
-            (err.error as { detail?: string } | null)?.detail ??
-            err.statusText ??
-            'Request failed',
+            (err.error as { detail?: string } | null)?.detail ?? err.statusText ?? 'Request failed',
           isNetworkError: err.status === 0,
           originalDetail: err.error,
         };

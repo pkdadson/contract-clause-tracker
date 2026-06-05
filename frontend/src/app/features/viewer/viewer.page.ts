@@ -23,8 +23,14 @@ import { ViewerHeader } from './viewer-header.component';
   imports: [OverlayModule, SentenceComponent, ClausePicker, ViewerHeader, RouterLink],
   template: `
     @if (store.document(); as doc) {
-      <app-viewer-header [doc]="doc" [labeled]="store.labeledCount()" [total]="store.sentenceCount()" />
-      <div class="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-8 bg-surface my-4 md:my-6 rounded shadow-sm border border-border">
+      <app-viewer-header
+        [doc]="doc"
+        [labeled]="store.labeledCount()"
+        [total]="store.sentenceCount()"
+      />
+      <div
+        class="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-8 bg-surface my-4 md:my-6 rounded shadow-sm border border-border"
+      >
         @for (s of doc.sentences; track s.id) {
           <span #anchor="cdkOverlayOrigin" cdkOverlayOrigin>
             <app-sentence [sentence]="s" (activate)="open(s.id, anchor)" />
@@ -39,11 +45,13 @@ import { ViewerHeader } from './viewer-header.component';
         [cdkConnectedOverlayHasBackdrop]="true"
         cdkConnectedOverlayBackdropClass="bg-transparent"
         (backdropClick)="close()"
-        [cdkConnectedOverlayPositions]="positions">
+        [cdkConnectedOverlayPositions]="positions"
+      >
         @if (openSentence()) {
           <app-clause-picker
             [currentLabel]="currentLabel()"
-            (picked)="onPicked(openId()!, $event)" />
+            (picked)="onPicked(openId()!, $event)"
+          />
         }
       </ng-template>
     } @else if (store.notFound()) {
@@ -58,7 +66,10 @@ import { ViewerHeader } from './viewer-header.component';
     } @else if (store.loading()) {
       <div class="max-w-3xl mx-auto px-8 py-10 space-y-3" aria-busy="true">
         @for (n of [1, 2, 3, 4, 5]; track n) {
-          <div class="h-4 bg-surface rounded animate-pulse" [style.width.%]="60 + (n % 3) * 15"></div>
+          <div
+            class="h-4 bg-surface rounded animate-pulse"
+            [style.width.%]="60 + (n % 3) * 15"
+          ></div>
         }
       </div>
     }
@@ -129,8 +140,7 @@ export class ViewerPage implements OnInit {
     }
     if (event.kind === 'set') {
       const name =
-        this.clauseTypes.types().find(t => t.id === event.clauseTypeId)?.name ??
-        event.clauseTypeId;
+        this.clauseTypes.types().find(t => t.id === event.clauseTypeId)?.name ?? event.clauseTypeId;
       this.store.setLabel(sentenceId, event.clauseTypeId, () =>
         this.announcer.announce('Could not save label. Try again.'),
       );
