@@ -16,7 +16,7 @@ class Document(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
     title: Mapped[str] = mapped_column(String)
     party: Mapped[str | None] = mapped_column(String, nullable=True)
-    contract_type: Mapped[str] = mapped_column(String)
+    contract_type: Mapped[str | None] = mapped_column(String, nullable=True)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     modified_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

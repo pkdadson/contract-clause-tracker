@@ -1,5 +1,8 @@
 from datetime import datetime
 from pydantic import BaseModel, Field
+from typing import Literal
+
+ContractType = Literal["NDA", "MSA", "DPA", "Employment", "Reseller", "Other"]
 
 class ClauseTypeOut(BaseModel):
     id: str
@@ -21,7 +24,7 @@ class DocumentListItem(BaseModel):
     id: str
     title: str
     party: str | None
-    contract_type: str
+    contract_type: ContractType | None
     uploaded_at: datetime
     modified_at: datetime
     sentence_count: int
@@ -32,7 +35,7 @@ class DocumentDetail(BaseModel):
     id: str
     title: str
     party: str | None
-    contract_type: str
+    contract_type: ContractType | None
     uploaded_at: datetime
     modified_at: datetime
     sentences: list[SentenceOut]
@@ -40,6 +43,9 @@ class DocumentDetail(BaseModel):
 
 class LabelSetRequest(BaseModel):
     clause_type_id: str = Field(min_length=1)
+
+class DocumentUpdateRequest(BaseModel):
+    contract_type: ContractType | None
 
 class SuggestionOut(BaseModel):
     id: str
