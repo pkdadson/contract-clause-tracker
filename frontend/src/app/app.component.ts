@@ -3,12 +3,14 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { ClauseTypesStore } from './core/stores/clause-types.store';
 import { DocumentsStore } from './core/stores/documents.store';
+import { UploadDialog } from './features/upload/upload.dialog';
+import { UploadBus } from './shared/services/upload-bus';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, UploadDialog],
   template: `
     <a class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:bg-surface focus:text-ink focus:px-3 focus:py-2 focus:rounded-md focus:shadow"
        href="#main">Skip to main content</a>
@@ -19,7 +21,9 @@ import { DocumentsStore } from './core/stores/documents.store';
           <div class="font-sans font-bold text-lg tracking-tight">Clause Tracker</div>
           <div class="text-ink-muted text-xs mt-0.5">Contract review</div>
         </div>
-        <button type="button" class="bg-accent text-white font-medium py-2 px-3 rounded-md hover:opacity-90">
+        <button type="button"
+                (click)="bus.open.set(true)"
+                class="bg-accent text-white font-medium py-2 px-3 rounded-md hover:opacity-90">
           + Upload
         </button>
         <nav class="text-sm">
@@ -34,10 +38,15 @@ import { DocumentsStore } from './core/stores/documents.store';
       </aside>
       <main id="main" class="bg-canvas overflow-auto"><router-outlet /></main>
     </div>
+
+    @if (bus.open()) {
+      <app-upload-dialog (close)="bus.open.set(false)" />
+    }
   `,
 })
 export class AppComponent {
   docs = inject(DocumentsStore);
+  bus = inject(UploadBus);
 
   constructor() {
     inject(ClauseTypesStore).load();

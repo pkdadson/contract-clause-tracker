@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { ClauseTypesStore } from '../../core/stores/clause-types.store';
 import { DocumentsStore } from '../../core/stores/documents.store';
+import { UploadBus } from '../../shared/services/upload-bus';
 import { DocumentRowComponent } from './document-row.component';
 import { EmptyStateComponent } from './empty-state.component';
 import type { GroupMode, SortMode } from './utils/derivations';
@@ -103,6 +104,7 @@ export class DashboardPage implements OnInit {
   private clauseTypes = inject(ClauseTypesStore);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private bus = inject(UploadBus);
 
   readonly groupOptions: { label: string; value: GroupMode }[] = [
     { label: 'No grouping', value: 'none' },
@@ -146,7 +148,7 @@ export class DashboardPage implements OnInit {
   }
 
   openUpload(): void {
-    /* wired in Phase 4 */
+    this.bus.open.set(true);
   }
 
   groupLabel(key: string): string {
