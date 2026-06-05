@@ -72,6 +72,7 @@ export class ViewerPage implements OnInit {
 
   openId = signal<string | null>(null);
   originRef = signal<CdkOverlayOrigin | null>(null);
+  private openerElement: HTMLElement | null = null;
 
   openSentence = computed(() => {
     const id = this.openId();
@@ -108,6 +109,7 @@ export class ViewerPage implements OnInit {
   }
 
   open(sentenceId: string, anchor: CdkOverlayOrigin): void {
+    this.openerElement = document.activeElement as HTMLElement | null;
     this.originRef.set(anchor);
     this.openId.set(sentenceId);
   }
@@ -115,6 +117,9 @@ export class ViewerPage implements OnInit {
   close(): void {
     this.openId.set(null);
     this.originRef.set(null);
+    const opener = this.openerElement;
+    this.openerElement = null;
+    queueMicrotask(() => opener?.focus?.());
   }
 
   onPicked(sentenceId: string, event: PickerEvent): void {
