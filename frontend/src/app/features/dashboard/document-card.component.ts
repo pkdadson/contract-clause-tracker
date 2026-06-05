@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { ClauseChipComponent } from '../../shared/ui/clause-chip.component';
-import type { DocumentListItem } from '../../core/types/api';
+import { DocumentsStore } from '../../core/stores/documents.store';
+import { CONTRACT_TYPES, type ContractType, type DocumentListItem } from '../../core/types/api';
 
-const TYPE_LABEL: Record<string, string> = {
+const TYPE_LABEL: Record<ContractType, string> = {
   NDA: 'NDA',
   MSA: 'MSA',
   DPA: 'DPA',
@@ -25,10 +26,11 @@ const TYPE_LABEL: Record<string, string> = {
     >
       <div class="grid grid-cols-[44px_1fr_auto] gap-4 items-center">
         <div
+          data-testid="type-badge"
           class="w-11 h-12 rounded-md bg-sunken border border-border grid place-items-center text-[10px] font-sans font-bold tracking-wide text-ink-muted"
           aria-hidden="true"
         >
-          {{ typeLabel() }}
+          {{ typeBadge() }}
         </div>
 
         <div class="min-w-0">
@@ -40,7 +42,7 @@ const TYPE_LABEL: Record<string, string> = {
               <span class="truncate max-w-[180px]">{{ doc().party }}</span>
               <span class="w-1 h-1 rounded-full bg-ink-faint/50" aria-hidden="true"></span>
             }
-            <span>{{ doc().contract_type }}</span>
+            <span [class.italic]="doc().contract_type === null">{{ typeLine() }}</span>
             <span class="w-1 h-1 rounded-full bg-ink-faint/50" aria-hidden="true"></span>
             <span>Updated {{ modifiedLabel() }}</span>
           </div>
@@ -63,6 +65,20 @@ const TYPE_LABEL: Record<string, string> = {
         </div>
 
         <div class="flex flex-col items-end gap-1.5 min-w-[120px]">
+          <label class="sr-only" [attr.for]="'type-' + doc().id">Contract type</label>
+          <select
+            data-testid="type-select"
+            [id]="'type-' + doc().id"
+            class="text-[11px] bg-surface border border-border rounded-md px-1.5 py-1 hover:border-border-strong focus-visible:border-accent"
+            [value]="doc().contract_type ?? ''"
+            (change)="onTypeChange($event)"
+            (click)="$event.stopPropagation()"
+          >
+            <option value="">Unclassified</option>
+            @for (t of types; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
           <div
             class="w-[120px] h-1.5 bg-sunken rounded-full overflow-hidden"
             role="progressbar"
@@ -85,9 +101,16 @@ const TYPE_LABEL: Record<string, string> = {
   `,
 })
 export class DocumentCardComponent {
-  doc = input.required<DocumentListItem>();
+  private store = inject(DocumentsStore);
 
-  typeLabel = computed(() => TYPE_LABEL[this.doc().contract_type] ?? 'DOC');
+  doc = input.required<DocumentListItem>();
+  readonly types = CONTRACT_TYPES;
+
+  typeBadge = computed(() => {
+    const t = this.doc().contract_type;
+    return t === null ? '?' : TYPE_LABEL[t];
+  });
+  typeLine = computed(() => this.doc().contract_type ?? 'Unclassified');
   modifiedLabel = computed(() => relativeDate(this.doc().modified_at));
   visibleChips = computed(() => this.doc().clause_types_present.slice(0, 5));
   hiddenChipCount = computed(() => Math.max(0, this.doc().clause_types_present.length - 5));
@@ -98,6 +121,12 @@ export class DocumentCardComponent {
   progressLabel = computed(
     () => `${this.doc().labeled_count} of ${this.doc().sentence_count} sentences labelled`,
   );
+
+  onTypeChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const next: ContractType | null = value === '' ? null : (value as ContractType);
+    this.store.setContractType(this.doc().id, next);
+  }
 }
 
 function relativeDate(iso: string): string {
