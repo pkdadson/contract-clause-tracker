@@ -76,8 +76,9 @@ describe('DocumentsStore', () => {
 
       const groups = store.grouped();
       expect(groups.length).toBe(1);
-      expect(groups[0].key).toBe('MSA');
-      expect(groups[0].documents.map(d => d.id)).toEqual(['3', '1']);
+      const [first] = groups;
+      expect(first?.key).toBe('MSA');
+      expect(first?.documents.map(d => d.id)).toEqual(['3', '1']);
     });
 
     it('sorts by modified date descending by default', () => {

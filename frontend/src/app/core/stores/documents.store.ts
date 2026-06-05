@@ -17,8 +17,8 @@ export class DocumentsStore {
   private cancelLoad$ = new Subject<void>();
 
   private readonly _documents = signal<DocumentListItem[]>([]);
-  readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
+  private readonly _loading = signal(false);
+  private readonly _error = signal<string | null>(null);
 
   readonly searchQuery = signal('');
   readonly clauseFilter = signal<ReadonlySet<string>>(new Set());
@@ -26,6 +26,8 @@ export class DocumentsStore {
   readonly sort = signal<SortMode>('modified-desc');
 
   readonly all = this._documents.asReadonly();
+  readonly loading = this._loading.asReadonly();
+  readonly error = this._error.asReadonly();
   readonly filtered = computed(() =>
     searchAndFilter(this._documents(), this.searchQuery(), this.clauseFilter()),
   );
@@ -34,19 +36,19 @@ export class DocumentsStore {
 
   load(): void {
     this.cancelLoad$.next();
-    this.loading.set(true);
-    this.error.set(null);
+    this._loading.set(true);
+    this._error.set(null);
     this.api
       .list()
       .pipe(takeUntil(this.cancelLoad$))
       .subscribe({
         next: docs => {
           this._documents.set(docs);
-          this.loading.set(false);
+          this._loading.set(false);
         },
         error: () => {
-          this.error.set('Could not load contracts');
-          this.loading.set(false);
+          this._error.set('Could not load contracts');
+          this._loading.set(false);
         },
       });
   }

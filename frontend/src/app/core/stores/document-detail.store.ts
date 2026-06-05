@@ -19,13 +19,18 @@ export class DocumentDetailStore {
   private cancelLoad$ = new Subject<void>();
   private labelInflight = new Map<string, LabelInflight>();
 
-  readonly document = signal<DocumentDetail | null>(null);
-  readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
-  readonly notFound = signal(false);
+  private readonly _document = signal<DocumentDetail | null>(null);
+  private readonly _loading = signal(false);
+  private readonly _error = signal<string | null>(null);
+  private readonly _notFound = signal(false);
+
+  readonly document = this._document.asReadonly();
+  readonly loading = this._loading.asReadonly();
+  readonly error = this._error.asReadonly();
+  readonly notFound = this._notFound.asReadonly();
 
   readonly bodySentences = computed(() =>
-    (this.document()?.sentences ?? []).filter(s => !s.is_heading),
+    (this._document()?.sentences ?? []).filter(s => !s.is_heading),
   );
   readonly labeledCount = computed(
     () => this.bodySentences().filter(s => !!s.clause_type_id).length,
@@ -34,27 +39,27 @@ export class DocumentDetailStore {
 
   load(id: string): void {
     this.cancelLoad$.next();
-    this.loading.set(true);
-    this.error.set(null);
-    this.notFound.set(false);
+    this._loading.set(true);
+    this._error.set(null);
+    this._notFound.set(false);
     this.docsApi
       .get(id)
       .pipe(takeUntil(this.cancelLoad$))
       .subscribe({
         next: d => {
-          this.document.set(d);
-          this.loading.set(false);
+          this._document.set(d);
+          this._loading.set(false);
         },
         error: e => {
-          this.loading.set(false);
-          if (e?.status === 404) this.notFound.set(true);
-          else this.error.set('Could not load this contract');
+          this._loading.set(false);
+          if (e?.status === 404) this._notFound.set(true);
+          else this._error.set('Could not load this contract');
         },
       });
   }
 
   setLabel(sentenceId: string, clauseTypeId: string, onError: () => void): void {
-    const doc = this.document();
+    const doc = this._document();
     if (!doc) return;
     const inflight = this.beginInflight(sentenceId, doc);
     this._patchSentence(sentenceId, { clause_type_id: clauseTypeId });
@@ -72,7 +77,7 @@ export class DocumentDetailStore {
   }
 
   clearLabel(sentenceId: string, onError: () => void): void {
-    const doc = this.document();
+    const doc = this._document();
     if (!doc) return;
     const inflight = this.beginInflight(sentenceId, doc);
     this._patchSentence(sentenceId, { clause_type_id: null });
@@ -104,7 +109,7 @@ export class DocumentDetailStore {
   }
 
   private _patchSentence(sid: string, patch: Partial<Sentence>): void {
-    this.document.update(doc => {
+    this._document.update(doc => {
       if (!doc) return doc;
       return {
         ...doc,

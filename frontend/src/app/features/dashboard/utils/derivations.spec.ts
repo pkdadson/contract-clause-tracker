@@ -76,7 +76,7 @@ describe('groupDocuments', () => {
   it('returns one group with everything when mode=none', () => {
     const groups = groupDocuments(docs, 'none');
     expect(groups.length).toBe(1);
-    expect(groups[0].documents.length).toBe(3);
+    expect(groups[0]?.documents.length).toBe(3);
   });
 
   it('groups by contract type', () => {

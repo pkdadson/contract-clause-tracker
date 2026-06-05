@@ -42,7 +42,7 @@ import type { GroupMode, SortMode } from './utils/derivations';
             <input type="search"
                    placeholder="Search by title, party, or type…"
                    [value]="store.searchQuery()"
-                   (input)="onSearch($any($event.target).value)"
+                   (input)="onSearch($event)"
                    class="w-full bg-surface border border-border rounded-md px-3 py-2" />
           </label>
 
@@ -131,7 +131,8 @@ export class DashboardPage implements OnInit {
     this.store.sort.set((p.get('sort') as SortMode) ?? 'modified-desc');
   }
 
-  onSearch(value: string): void {
+  onSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
     this.store.searchQuery.set(value);
     this._syncUrl({ q: value || null });
   }

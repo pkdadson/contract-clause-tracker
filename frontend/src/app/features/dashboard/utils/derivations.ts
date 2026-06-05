@@ -51,8 +51,9 @@ export function groupDocuments(
   if (mode === 'contract-type') {
     const map = new Map<string, DocumentListItem[]>();
     for (const d of docs) {
-      if (!map.has(d.contract_type)) map.set(d.contract_type, []);
-      map.get(d.contract_type)!.push(d);
+      const existing = map.get(d.contract_type);
+      if (existing) existing.push(d);
+      else map.set(d.contract_type, [d]);
     }
     return [...map.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
@@ -61,8 +62,9 @@ export function groupDocuments(
   const map = new Map<string, DocumentListItem[]>();
   for (const d of docs) {
     for (const ct of d.clause_types_present) {
-      if (!map.has(ct)) map.set(ct, []);
-      map.get(ct)!.push(d);
+      const existing = map.get(ct);
+      if (existing) existing.push(d);
+      else map.set(ct, [d]);
     }
   }
   return [...map.entries()].map(([key, documents]) => ({ key, label: key, documents }));

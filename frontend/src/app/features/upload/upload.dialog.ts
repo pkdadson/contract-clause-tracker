@@ -41,7 +41,7 @@ const ALLOWED = ['.txt', '.md'];
           <input #fileInput
                  type="file"
                  accept=".txt,.md"
-                 (change)="onPick($any($event.target).files?.[0])"
+                 (change)="onPick($event)"
                  class="block w-full text-sm" />
         </label>
 
@@ -90,7 +90,8 @@ export class UploadDialog implements AfterViewInit, OnDestroy {
     if (!this.uploading()) this.close.emit();
   }
 
-  onPick(file?: File): void {
+  onPick(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
     this.error.set(null);
 

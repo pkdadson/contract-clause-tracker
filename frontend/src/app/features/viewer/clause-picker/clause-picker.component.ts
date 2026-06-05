@@ -37,7 +37,7 @@ export type PickerEvent =
                aria-labelledby="picker-title"
                [attr.aria-activedescendant]="activeId() ? 'opt-' + activeId() : null"
                [value]="query()"
-               (input)="onSearchInput($any($event.target).value)"
+               (input)="onSearchInput($event)"
                placeholder="Search clause types…"
                class="w-full bg-canvas border border-border rounded px-2 py-1.5 text-sm" />
       </div>
@@ -105,8 +105,8 @@ export class ClausePicker {
     afterNextRender(() => this.searchInput()?.nativeElement.focus());
   }
 
-  onSearchInput(value: string): void {
-    this.query.set(value);
+  onSearchInput(event: Event): void {
+    this.query.set((event.target as HTMLInputElement).value);
     this.active.set(0);
   }
 
