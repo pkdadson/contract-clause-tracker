@@ -7,9 +7,10 @@ module.exports = {
       colors: {
         canvas:  'var(--bg-canvas)',
         surface: 'var(--surface)',
-        ink:        { DEFAULT: 'var(--ink)', muted: 'var(--ink-muted)' },
-        accent:     { DEFAULT: 'var(--accent)', soft: 'var(--accent-soft)' },
-        border:  'var(--border)',
+        sunken:  'var(--surface-sunken)',
+        ink:        { DEFAULT: 'var(--ink)', muted: 'var(--ink-muted)', faint: 'var(--ink-faint)' },
+        accent:     { DEFAULT: 'var(--accent)', strong: 'var(--accent-strong)', soft: 'var(--accent-soft)' },
+        border:  { DEFAULT: 'var(--border)', strong: 'var(--border-strong)' },
         danger:  'var(--danger)',
         success: 'var(--success)',
       },

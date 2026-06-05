@@ -37,7 +37,7 @@ test('upload a contract, label the first sentence, see the label on the dashboar
     await page.getByRole('link', { name: /contracts/i }).first().click();
     await expect(page).toHaveURL(/\/$|\/\?/);
 
-    await expect(page.locator('table')).toContainText('Payment Terms');
+    await expect(page.locator('app-document-card').first()).toContainText('Payment Terms');
   } finally {
     fs.unlinkSync(fixture);
   }

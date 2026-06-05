@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ClauseTypesStore } from '../../core/stores/clause-types.store';
 import { DocumentsStore } from '../../core/stores/documents.store';
 import { UploadBus } from '../../shared/services/upload-bus';
-import { DocumentRowComponent } from './document-row.component';
+import { DocumentCardComponent } from './document-card.component';
 import { EmptyStateComponent } from './empty-state.component';
 import type { GroupMode, SortMode } from './utils/derivations';
 
@@ -13,23 +13,52 @@ import type { GroupMode, SortMode } from './utils/derivations';
   selector: 'app-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DocumentRowComponent, EmptyStateComponent],
+  imports: [DocumentCardComponent, EmptyStateComponent],
   template: `
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-10">
-      <header class="mb-8">
-        <h1 class="font-serif text-3xl">Contracts</h1>
-        <p class="text-ink-muted mt-1">Search, filter, and group your contracts by clause type.</p>
+      <header class="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 class="font-serif text-3xl">Contracts</h1>
+          <p class="text-ink-muted mt-1">Track which clauses live in which contracts across your portfolio.</p>
+        </div>
+        <button type="button"
+                (click)="openUpload()"
+                class="hidden md:inline-flex items-center gap-2 bg-accent text-white font-semibold text-sm py-2.5 px-4 rounded-md hover:bg-accent-strong transition-colors duration-150 min-h-[40px]">
+          + Upload contract
+        </button>
       </header>
+
+      @if (all().length > 0) {
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+          <div class="bg-surface border border-border rounded-md p-4">
+            <div class="text-xs font-semibold text-ink-muted">Contracts</div>
+            <div class="text-3xl font-bold tabular-nums tracking-tight mt-2">{{ all().length }}</div>
+            <div class="text-xs text-ink-faint mt-1">across your portfolio</div>
+          </div>
+          <div class="bg-surface border border-border rounded-md p-4">
+            <div class="text-xs font-semibold text-ink-muted">Sentences labelled</div>
+            <div class="text-3xl font-bold tabular-nums tracking-tight mt-2 text-accent">{{ totalLabelled() }}</div>
+            <div class="text-xs text-ink-faint mt-1">
+              {{ clauseTypesCovered() }} clause {{ clauseTypesCovered() === 1 ? 'type' : 'types' }} covered
+            </div>
+          </div>
+          <div class="bg-surface border border-border rounded-md p-4 col-span-2 md:col-span-1">
+            <div class="text-xs font-semibold text-ink-muted">Coverage</div>
+            <div class="text-3xl font-bold tabular-nums tracking-tight mt-2">{{ coveragePct() }}%</div>
+            <div class="text-xs text-ink-faint mt-1">of sentences labelled</div>
+          </div>
+        </div>
+      }
 
       @if (loading() && all().length === 0) {
         <div class="space-y-2" aria-busy="true" aria-live="polite">
           @for (n of [1, 2, 3, 4, 5]; track n) {
-            <div class="h-14 bg-surface border border-border rounded animate-pulse"></div>
+            <div class="h-20 bg-surface border border-border rounded-md animate-pulse"></div>
           }
         </div>
       } @else if (error()) {
         <div role="alert"
-             class="bg-surface border border-danger/30 text-danger rounded p-4 flex items-center justify-between">
+             class="bg-surface border border-danger/30 text-danger rounded-md p-4 flex items-center justify-between">
           <span>{{ error() }}</span>
           <button type="button" (click)="store.load()" class="underline">Retry</button>
         </div>
@@ -40,19 +69,19 @@ import type { GroupMode, SortMode } from './utils/derivations';
           <label class="grow max-w-md">
             <span class="sr-only">Search contracts</span>
             <input type="search"
-                   placeholder="Search by title, party, or type…"
+                   placeholder="Search contracts, parties, types…"
                    [value]="store.searchQuery()"
                    (input)="onSearch($event)"
-                   class="w-full bg-surface border border-border rounded-md px-3 py-2" />
+                   class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgba(239,90,36,.15)] transition-[border-color,box-shadow] duration-150" />
           </label>
 
-          <fieldset class="flex items-center gap-1 bg-surface border border-border rounded-md p-1">
+          <fieldset class="flex items-center gap-0.5 bg-sunken rounded-md p-1">
             <legend class="sr-only">Group by</legend>
             @for (g of groupOptions; track g.value) {
               <button type="button"
                       (click)="setGrouping(g.value)"
                       [attr.aria-pressed]="g.value === store.grouping()"
-                      class="px-3 py-1 text-sm rounded {{ g.value === store.grouping() ? 'bg-accent text-white' : 'text-ink-muted hover:text-ink' }}">
+                      class="px-3 py-1 text-xs font-semibold rounded transition-colors duration-150 {{ g.value === store.grouping() ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink' }}">
                 {{ g.label }}
               </button>
             }
@@ -60,40 +89,31 @@ import type { GroupMode, SortMode } from './utils/derivations';
 
           <button type="button"
                   (click)="toggleSort()"
-                  class="bg-surface border border-border rounded-md px-3 py-1 text-sm">
+                  class="bg-surface border border-border rounded-md px-3 py-1.5 text-xs font-semibold text-ink-muted hover:text-ink hover:border-border-strong transition-colors duration-150">
             Sort: {{ store.sort() === 'modified-desc' ? 'Modified' : 'Title' }}
           </button>
         </div>
 
         @if (filteredEmpty()) {
-          <p class="text-ink-muted text-center py-12">No contracts match your filters.</p>
+          <div class="bg-surface border border-border rounded-md text-center py-16 px-6">
+            <p class="font-serif text-lg text-ink">No contracts match</p>
+            <p class="text-sm text-ink-muted mt-1">Try a different search or clear the group.</p>
+          </div>
         } @else {
           @for (group of store.grouped(); track group.key) {
             @if (store.grouping() !== 'none') {
-              <h2 class="mt-6 mb-2 text-sm text-ink-muted">
-                {{ store.grouping() === 'clause-type' ? 'Documents containing ' : '' }}
-                <span class="text-ink font-medium">{{ groupLabel(group.key) }}</span>
-                <span class="tabular-nums">({{ group.documents.length }})</span>
-              </h2>
+              <div class="flex items-center gap-3 mt-6 mb-2.5">
+                <span class="text-sm font-semibold text-ink">
+                  {{ store.grouping() === 'clause-type' ? 'Documents containing ' : '' }}{{ groupLabel(group.key) }}
+                </span>
+                <span class="text-[11px] font-mono tabular-nums bg-sunken text-ink-faint px-2 py-0.5 rounded-full">{{ group.documents.length }}</span>
+                <span class="flex-1 h-px bg-border"></span>
+              </div>
             }
-            <div class="overflow-x-auto bg-surface rounded border border-border">
-            <table class="w-full">
-              <caption class="sr-only">Contracts</caption>
-              <thead class="text-left text-xs uppercase text-ink-muted tracking-wider">
-                <tr class="border-b border-border">
-                  <th scope="col" class="py-2 pl-4 pr-4 font-medium">Contract</th>
-                  <th scope="col" class="py-2 pr-4 font-medium">Type</th>
-                  <th scope="col" class="py-2 pr-4 font-medium">Progress</th>
-                  <th scope="col" class="py-2 pr-4 font-medium">Clauses</th>
-                  <th scope="col" class="py-2 pr-4 font-medium">Modified</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border [&>tr>td:first-child]:pl-4">
-                @for (doc of group.documents; track doc.id) {
-                  <tr app-document-row [doc]="doc"></tr>
-                }
-              </tbody>
-            </table>
+            <div class="flex flex-col gap-2">
+              @for (doc of group.documents; track doc.id) {
+                <app-document-card [doc]="doc" />
+              }
             </div>
           }
         }
@@ -118,6 +138,22 @@ export class DashboardPage implements OnInit {
   loading = this.store.loading;
   error = this.store.error;
   filteredEmpty = computed(() => this.store.sorted().length === 0);
+
+  totalLabelled = computed(() =>
+    this.all().reduce((sum, d) => sum + d.labeled_count, 0),
+  );
+  clauseTypesCovered = computed(() => {
+    const set = new Set<string>();
+    for (const d of this.all()) {
+      for (const ct of d.clause_types_present) set.add(ct);
+    }
+    return set.size;
+  });
+  coveragePct = computed(() => {
+    const total = this.all().reduce((sum, d) => sum + d.sentence_count, 0);
+    if (total === 0) return 0;
+    return Math.round((this.totalLabelled() / total) * 100);
+  });
 
   private params = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
