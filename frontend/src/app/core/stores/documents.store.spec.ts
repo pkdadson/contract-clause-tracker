@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { DocumentsApi } from '../api/documents.api';
 import type { DocumentListItem } from '../types/api';
@@ -103,6 +103,24 @@ describe('DocumentsStore', () => {
       store.load();
       store.upsert(make({ id: 'd1', title: 'updated' }));
       expect(store.all().map(d => d.title)).toEqual(['updated', 'Mutual NDA']);
+    });
+  });
+
+  describe('rapid load cancels the prior in-flight request', () => {
+    it('drops the first response when a second load arrives before it resolves', () => {
+      const { store, api } = setup();
+      const first = new Subject<DocumentListItem[]>();
+      const second = new Subject<DocumentListItem[]>();
+      api.list.and.returnValues(first.asObservable(), second.asObservable());
+
+      store.load();
+      store.load();
+
+      first.next([make({ id: 'A' })]);
+      expect(store.all().length).toBe(0);
+
+      second.next([make({ id: 'B' })]);
+      expect(store.all().map(d => d.id)).toEqual(['B']);
     });
   });
 });

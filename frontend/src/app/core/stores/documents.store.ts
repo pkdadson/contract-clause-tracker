@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 
 import { DocumentsApi } from '../api/documents.api';
 import type { DocumentListItem } from '../types/api';
@@ -13,6 +14,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DocumentsStore {
   private api = inject(DocumentsApi);
+  private cancelLoad$ = new Subject<void>();
 
   private readonly _documents = signal<DocumentListItem[]>([]);
   readonly loading = signal(false);
@@ -31,18 +33,22 @@ export class DocumentsStore {
   readonly grouped = computed(() => groupDocuments(this.sorted(), this.grouping()));
 
   load(): void {
+    this.cancelLoad$.next();
     this.loading.set(true);
     this.error.set(null);
-    this.api.list().subscribe({
-      next: docs => {
-        this._documents.set(docs);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Could not load contracts');
-        this.loading.set(false);
-      },
-    });
+    this.api
+      .list()
+      .pipe(takeUntil(this.cancelLoad$))
+      .subscribe({
+        next: docs => {
+          this._documents.set(docs);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.error.set('Could not load contracts');
+          this.loading.set(false);
+        },
+      });
   }
 
   upsert(doc: DocumentListItem): void {

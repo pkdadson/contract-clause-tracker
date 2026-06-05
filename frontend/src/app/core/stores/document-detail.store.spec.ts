@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { DocumentsApi } from '../api/documents.api';
 import { LabelsApi } from '../api/labels.api';
@@ -137,6 +137,55 @@ describe('DocumentDetailStore', () => {
     });
   });
 
+  describe('setLabel — rapid concurrent calls on the same sentence', () => {
+    it('rolling back the second call restores the ORIGINAL label, not the optimistic intermediate', () => {
+      const { store, docsApi, labelsApi } = setup();
+      docsApi.get.and.returnValue(of(doc()));
+      store.load('d1');
+
+      const first = new Subject<Sentence>();
+      const second = new Subject<Sentence>();
+      labelsApi.set.and.returnValues(first.asObservable(), second.asObservable());
+
+      const onError1 = jasmine.createSpy('onError1');
+      const onError2 = jasmine.createSpy('onError2');
+
+      store.setLabel('s3', 'payment', onError1);
+      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('payment');
+
+      store.setLabel('s3', 'indemnity', onError2);
+      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('indemnity');
+
+      second.error(new Error('boom'));
+      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('liability');
+      expect(onError2).toHaveBeenCalledTimes(1);
+
+      first.next(sentence({ id: 's3', clause_type_id: 'payment' }));
+      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('liability');
+      expect(onError1).not.toHaveBeenCalled();
+    });
+
+    it('clears the in-flight record when the call succeeds so the next call captures fresh state', () => {
+      const { store, docsApi, labelsApi } = setup();
+      docsApi.get.and.returnValue(of(doc()));
+      store.load('d1');
+
+      const first = new Subject<Sentence>();
+      const second = new Subject<Sentence>();
+      labelsApi.set.and.returnValues(first.asObservable(), second.asObservable());
+
+      store.setLabel('s3', 'payment', () => {});
+      first.next(sentence({ id: 's3', clause_type_id: 'payment' }));
+
+      const onError = jasmine.createSpy('onError');
+      store.setLabel('s3', 'indemnity', onError);
+      second.error(new Error('boom'));
+
+      expect(store.document()!.sentences.find(s => s.id === 's3')!.clause_type_id).toBe('payment');
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('clearLabel — optimistic with rollback', () => {
     it('clears the sentence label immediately and calls the API', () => {
       const { store, docsApi, labelsApi } = setup();
@@ -165,6 +214,24 @@ describe('DocumentDetailStore', () => {
       const s3 = store.document()!.sentences.find(s => s.id === 's3');
       expect(s3!.clause_type_id).toBe('liability');
       expect(onError).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('rapid load cancels the prior in-flight request', () => {
+    it('drops a stale document response when a second load arrives before it resolves', () => {
+      const { store, docsApi } = setup();
+      const first = new Subject<DocumentDetail>();
+      const second = new Subject<DocumentDetail>();
+      docsApi.get.and.returnValues(first.asObservable(), second.asObservable());
+
+      store.load('A');
+      store.load('B');
+
+      first.next(doc({ id: 'A' }));
+      expect(store.document()).toBeNull();
+
+      second.next(doc({ id: 'B' }));
+      expect(store.document()?.id).toBe('B');
     });
   });
 });
