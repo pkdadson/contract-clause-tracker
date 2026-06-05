@@ -15,6 +15,20 @@ def test_upload_txt_splits_into_sentences(client):
     bodies = [s for s in doc["sentences"] if not s["is_heading"]]
     assert [s["text"] for s in bodies] == ["First clause.", "Second clause.", "Third."]
 
+def test_upload_with_unrecognised_filename_leaves_type_null(client):
+    r = _upload(client, "lines-20.txt", "Line 1.\nLine 2.\nLine 3.\n")
+    assert r.status_code == 201
+    assert r.json()["contract_type"] is None
+
+def test_upload_falls_back_to_content_sniff_for_type(client):
+    r = _upload(
+        client,
+        "agreement-2024.txt",
+        "MASTER SERVICES AGREEMENT\n\nThis agreement governs services.\n",
+    )
+    assert r.status_code == 201
+    assert r.json()["contract_type"] == "MSA"
+
 def test_upload_rejects_pdf(client):
     r = client.post(
         "/api/documents",

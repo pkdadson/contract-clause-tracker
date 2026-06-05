@@ -12,22 +12,46 @@ from ..sentence_splitter import split_into_sentences
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 
-def _infer_contract_type(title: str) -> str:
-    lower = title.lower()
-    for keyword, ctype in [
-        ("nda", "NDA"),
-        ("non-disclosure", "NDA"),
-        ("master services", "MSA"),
-        ("services agreement", "MSA"),
-        ("msa", "MSA"),
-        ("employment", "Employment"),
-        ("data processing", "DPA"),
-        ("dpa", "DPA"),
-        ("reseller", "Reseller"),
-    ]:
+_TYPE_KEYWORDS: list[tuple[str, str]] = [
+    ("nda", "NDA"),
+    ("non-disclosure", "NDA"),
+    ("master services", "MSA"),
+    ("services agreement", "MSA"),
+    ("msa", "MSA"),
+    ("employment", "Employment"),
+    ("data processing", "DPA"),
+    ("dpa", "DPA"),
+    ("reseller", "Reseller"),
+]
+
+
+def _match_keywords(haystack: str) -> str | None:
+    lower = haystack.lower()
+    for keyword, ctype in _TYPE_KEYWORDS:
         if keyword in lower:
             return ctype
-    return "Other"
+    return None
+
+
+def _infer_contract_type(title: str, sentences: list) -> str | None:
+    by_title = _match_keywords(title)
+    if by_title is not None:
+        return by_title
+
+    head_text: list[str] = []
+    for ss in sentences:
+        if ss.is_heading:
+            head_text.append(ss.text)
+            break
+    body_seen = 0
+    for ss in sentences:
+        if ss.is_heading:
+            continue
+        head_text.append(ss.text)
+        body_seen += 1
+        if body_seen >= 2:
+            break
+    return _match_keywords(" ".join(head_text))
 
 
 @router.post("", response_model=DocumentDetail, status_code=status.HTTP_201_CREATED)
@@ -54,11 +78,12 @@ async def upload_document(
         raise HTTPException(status_code=400, detail="File must be UTF-8 encoded text") from exc
 
     title = Path(filename).stem.replace("_", " ").replace("-", " ").title()
-    doc = Document(title=title, contract_type=_infer_contract_type(title))
+    parsed = list(split_into_sentences(text))
+    doc = Document(title=title, contract_type=_infer_contract_type(title, parsed))
     db.add(doc)
     db.flush()
 
-    for ss in split_into_sentences(text):
+    for ss in parsed:
         db.add(Sentence(
             document_id=doc.id,
             idx=ss.idx,
