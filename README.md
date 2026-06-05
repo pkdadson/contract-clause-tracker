@@ -24,7 +24,7 @@ The case study asked for three things and I built exactly that: upload a contrac
 
 ### The labelling round-trip
 
-The critical interaction in the app — the part I'd want to be inspected in a code review — is the optimistic-with-rollback path. It's the same sequence whether the user accepts an AI suggestion (future work) or applies a manual label:
+The critical interaction in the app — the part I'd want a reviewer to dig into — is the optimistic-with-rollback path. It's the same sequence whether the user accepts an AI suggestion (future work) or applies a manual label:
 
 ```mermaid
 sequenceDiagram
@@ -51,14 +51,17 @@ sequenceDiagram
 
 The non-obvious detail is the *snapshot*. On rapid re-clicks of the same sentence, the second call doesn't capture the optimistic intermediate value — it preserves the *original* pre-action label, so any rollback unwinds to the true starting state rather than a half-applied one. Covered by [`document-detail.store.spec.ts`](frontend/src/app/core/stores/document-detail.store.spec.ts) (the `setLabel — rapid concurrent calls` block).
 
-### Why these choices
+### Architecture choices
 
 - **SQLite over Postgres.** No concurrency, ops, or vendor extensions needed at this scale. One fewer service in the compose file, one less thing to defend.
 - **Signals over RxJS as the primary state primitive.** Signals where the derivation is synchronous (the dashboard's search → filter → sort → group pipeline is a chain of `computed()`s), RxJS where the source is genuinely async (HTTP, route params). The bridge is `toSignal()` and `toObservable()`. I'd reach for NgRx the moment a third feature needed to react to label changes; with three bounded stores and no cross-cutting actions, NgRx would be boilerplate without payback.
 - **Client-side search and filtering.** The dashboard list is small and the filter is a pure function behind a `computed()`. If the list grew past a thousand rows, or we needed full-text search across contract bodies, or we added per-user permissions, the swap is one HTTP call and one signal — no component changes.
-- **Editorial serif for the contract body, sans for the chrome.** A reviewer is reading a contract, not an app. Source Serif 4 inherits the editorial tradition that long-form legal text comes in. Inter handles UI text; JetBrains Mono is reserved for IDs and tabular numbers.
 - **Sentence pre-split on the server.** The frontend gets a clean `Sentence[]` and renders each as a real `<button>` with proper ARIA. That keeps the labelling UI accessible by construction and avoids fragile character-offset math in the browser.
 - **URL-bound dashboard state.** The setter writes; the URL is a serialised snapshot the browser can bookmark, share, or back-button into. I deliberately don't write the URL back into the store on every change — the user action is the writer.
+- **Editorial serif for the contract body, sans for the chrome.** A reviewer is reading a contract, not an app. Source Serif 4 inherits the editorial tradition that long-form legal text comes in. Inter handles UI text; JetBrains Mono is reserved for IDs and tabular numbers.
+
+### Discipline choices
+
 - **HTTP layer.** Two function-style interceptors. `httpRetryInterceptor` retries idempotent GETs on transient failures (network errors and 502/503/504) up to twice, with exponential backoff. POSTs, PUTs, and DELETEs are never retried — they're not idempotent. `httpErrorInterceptor` normalises every failure into a typed `ApiError` shape so downstream code never depends on `HttpErrorResponse`. Adding an auth interceptor or a request-id tracer later is one entry in the `withInterceptors` array.
 - **Race protection.** Two paths matter: rapid `load()` calls (the user back-and-forwarding between contracts) cancel the prior in-flight request via `takeUntil(cancelLoad$)`. Rapid `setLabel` / `clearLabel` calls on the same sentence (the picker reopened before the previous PUT resolves) cancel the prior request *and* preserve the **original** pre-optimistic label, so a late failure rolls back to the true starting state — not to an unverified optimistic intermediate.
 - **Type safety posture.** `strict: true` plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noPropertyAccessFromIndexSignature`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, and Angular's `strictTemplates` / `strictInjectionParameters` / `strictInputAccessModifiers`. Stores expose writable signals as `.asReadonly()` so external code can't mutate state behind the seam. Zero `any` and zero `$any(...)` template escape hatches — `$event` lands in a typed handler and is cast to `HTMLInputElement` once, in TypeScript, not in the template.
@@ -100,7 +103,7 @@ The case study capped this at 3–4 hours. The items below are deliberate deferr
 - **Bulk operations.** "Apply to similar sentences", "jump to next unlabelled" hotkey, range-select.
 - **Dark mode.** The design tokens are CSS variables; dark mode is a `prefers-color-scheme` override, not a rewrite.
 - **Mobile labelling.** The CDK Overlay picker is anchored per-sentence and works at narrow widths, but on phones a bottom-sheet picker would be more thumb-friendly and free up reading space.
-- **Sentence touch-target sizing.** Sentence buttons are intentionally tight (~34 px) to keep the contract reading like a document rather than a list of cards. On true touch devices that's sub-44 px; the senior trade-off was for desktop reviewers reading editorial text. A touch mode would add per-sentence padding behind a media query or pointer-type check.
+- **Sentence touch-target sizing.** Sentence buttons are intentionally tight (~34 px) to keep the contract reading like a document rather than a list of cards. On true touch devices that's sub-44 px; the deliberate trade-off was for desktop reviewers reading editorial text. A touch mode would add per-sentence padding behind a media query or pointer-type check.
 - **Heading detection in the splitter.** `pysbd` treats every line as a sentence; short standalone lines that look like headings (e.g. "Confidentiality", "Limitation of Liability") render as labellable sentences instead of `<h3>`. A pre-pass heuristic — short line, no terminal punctuation, surrounded by blank lines — would mark those `is_heading=true` and give the viewer real document structure.
 - **Auth and permissions.** Single-tenant for now. The natural extension is row-level filtering at the DB layer with the user injected via FastAPI dependency.
 - **Conflict handling on labels.** Currently last-write-wins. An ETag-on-PUT pattern would matter as soon as multiple reviewers worked the same document concurrently.
