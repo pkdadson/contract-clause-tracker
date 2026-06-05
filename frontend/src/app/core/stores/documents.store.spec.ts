@@ -2,7 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { DocumentsApi } from '../api/documents.api';
-import type { DocumentListItem } from '../types/api';
+import { ClauseTypesApi } from '../api/clause-types.api';
+import { ClauseTypesStore } from './clause-types.store';
+import type { ClauseType, DocumentListItem } from '../types/api';
 import { DocumentsStore } from './documents.store';
 
 const make = (overrides: Partial<DocumentListItem>): DocumentListItem => ({
@@ -22,14 +24,19 @@ interface ApiMock {
   update: jasmine.Spy<(id: string, ct: string | null) => Observable<unknown>>;
 }
 
-const setup = () => {
+const setup = (clauseTypes: ClauseType[] = []) => {
   const api: ApiMock = {
     list: jasmine.createSpy('list'),
     update: jasmine.createSpy('update'),
   };
   TestBed.configureTestingModule({
-    providers: [DocumentsStore, { provide: DocumentsApi, useValue: api }],
+    providers: [
+      DocumentsStore,
+      { provide: DocumentsApi, useValue: api },
+      { provide: ClauseTypesApi, useValue: { list: () => of(clauseTypes) } },
+    ],
   });
+  TestBed.inject(ClauseTypesStore).load();
   return { store: TestBed.inject(DocumentsStore), api };
 };
 
@@ -108,6 +115,29 @@ describe('DocumentsStore', () => {
       api.list.and.returnValue(of(docs));
       store.load();
       expect(store.sorted().map(d => d.id)).toEqual(['2', '3', '1']);
+    });
+
+    it('searches by clause-type display name resolved via ClauseTypesStore', () => {
+      const { store, api } = setup([
+        {
+          id: 'liability',
+          name: 'Limitation of Liability',
+          description: '',
+          color_token: '--c-1',
+          sort_order: 1,
+        },
+        {
+          id: 'confidential',
+          name: 'Confidentiality',
+          description: '',
+          color_token: '--c-2',
+          sort_order: 2,
+        },
+      ]);
+      api.list.and.returnValue(of(docs));
+      store.load();
+      store.searchQuery.set('limitation');
+      expect(store.filtered().map(d => d.id).sort()).toEqual(['1', '3']);
     });
   });
 

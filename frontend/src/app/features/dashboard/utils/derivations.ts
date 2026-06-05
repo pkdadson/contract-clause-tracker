@@ -13,11 +13,17 @@ export function searchAndFilter(
   docs: ReadonlyArray<DocumentListItem>,
   query: string,
   clauseFilter: ReadonlySet<string>,
+  clauseTypeNames: ReadonlyMap<string, string> = new Map(),
 ): DocumentListItem[] {
   const q = query.trim().toLowerCase();
   return docs.filter(d => {
     if (q) {
-      const haystack = `${d.title} ${d.party ?? ''} ${d.contract_type ?? ''}`.toLowerCase();
+      const clauseNames = d.clause_types_present
+        .map(id => clauseTypeNames.get(id))
+        .filter((n): n is string => !!n)
+        .join(' ');
+      const haystack =
+        `${d.title} ${d.party ?? ''} ${d.contract_type ?? ''} ${clauseNames}`.toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     if (clauseFilter.size > 0) {

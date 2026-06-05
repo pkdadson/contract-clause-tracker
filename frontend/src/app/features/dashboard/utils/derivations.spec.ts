@@ -43,6 +43,18 @@ describe('searchAndFilter', () => {
     expect(searchAndFilter(docs, 'nda', new Set()).map(d => d.id)).toEqual(['2']);
   });
 
+  it('matches a clause-type name resolved via the name map', () => {
+    const names = new Map([
+      ['liability', 'Limitation of Liability'],
+      ['confidential', 'Confidentiality'],
+    ]);
+    expect(searchAndFilter(docs, 'limitation', new Set(), names).map(d => d.id)).toEqual(['1']);
+  });
+
+  it('ignores clause IDs without a name entry', () => {
+    expect(searchAndFilter(docs, 'liability', new Set()).map(d => d.id)).toEqual([]);
+  });
+
   it('filters by clause type intersection', () => {
     expect(searchAndFilter(docs, '', new Set(['liability'])).map(d => d.id)).toEqual(['1']);
   });

@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 
 import { DocumentsApi } from '../api/documents.api';
+import { ClauseTypesStore } from './clause-types.store';
 import type { ContractType, DocumentListItem } from '../types/api';
 import {
   groupDocuments,
@@ -14,6 +15,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DocumentsStore {
   private api = inject(DocumentsApi);
+  private clauseTypes = inject(ClauseTypesStore);
   private cancelLoad$ = new Subject<void>();
 
   private readonly _documents = signal<DocumentListItem[]>([]);
@@ -28,8 +30,16 @@ export class DocumentsStore {
   readonly all = this._documents.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
+  private readonly clauseTypeNames = computed(
+    () => new Map(this.clauseTypes.types().map(t => [t.id, t.name])),
+  );
   readonly filtered = computed(() =>
-    searchAndFilter(this._documents(), this.searchQuery(), this.clauseFilter()),
+    searchAndFilter(
+      this._documents(),
+      this.searchQuery(),
+      this.clauseFilter(),
+      this.clauseTypeNames(),
+    ),
   );
   readonly sorted = computed(() => sortDocuments(this.filtered(), this.sort()));
   readonly grouped = computed(() => groupDocuments(this.sorted(), this.grouping()));

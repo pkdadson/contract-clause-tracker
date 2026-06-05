@@ -74,7 +74,7 @@ import type { DocumentGroup, GroupMode, SortMode } from './utils/derivations';
             <span class="sr-only">Search contracts</span>
             <input
               type="search"
-              placeholder="Search contracts, parties, types…"
+              placeholder="Search contracts, parties, clauses…"
               [value]="store.searchQuery()"
               (input)="onSearch($event)"
               class="w-full bg-surface border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgba(239,90,36,.15)] transition-[border-color,box-shadow] duration-150"
