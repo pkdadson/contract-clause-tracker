@@ -16,16 +16,9 @@ import type { GroupMode, SortMode } from './utils/derivations';
   imports: [DocumentCardComponent, EmptyStateComponent],
   template: `
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-10">
-      <header class="flex flex-wrap items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 class="font-serif text-3xl">Contracts</h1>
-          <p class="text-ink-muted mt-1">Track which clauses live in which contracts across your portfolio.</p>
-        </div>
-        <button type="button"
-                (click)="openUpload()"
-                class="hidden md:inline-flex items-center gap-2 bg-accent text-white font-semibold text-sm py-2.5 px-4 rounded-md hover:bg-accent-strong transition-colors duration-150 min-h-[40px]">
-          + Upload contract
-        </button>
+      <header class="mb-6">
+        <h1 class="font-serif text-3xl">Contracts</h1>
+        <p class="text-ink-muted mt-1">Track which clauses live in which contracts across your portfolio.</p>
       </header>
 
       @if (all().length > 0) {
