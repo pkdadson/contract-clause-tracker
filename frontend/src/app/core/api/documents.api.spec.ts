@@ -55,6 +55,7 @@ describe('DocumentsApi', () => {
   it('PATCHes a null payload when clearing the type', () => {
     api.update('doc-1', null).subscribe();
     const req = http.expectOne(`${base}/documents/doc-1`);
+    expect(req.request.method).toBe('PATCH');
     expect(req.request.body).toEqual({ contract_type: null });
     req.flush({});
   });
