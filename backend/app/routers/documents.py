@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 from ..config import settings
 from ..dependencies import get_db
 from ..models import Document, Sentence
-from ..schemas import DocumentDetail, DocumentListItem
+from ..schemas import DocumentDetail, DocumentListItem, DocumentUpdateRequest
 from ..sentence_splitter import SplitSentence, split_into_sentences
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
@@ -131,4 +131,24 @@ def get_document(document_id: str, db: Session = Depends(get_db)) -> Document:
     )
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    return doc
+
+
+@router.patch("/{document_id}", response_model=DocumentDetail)
+def update_document(
+    document_id: str,
+    body: DocumentUpdateRequest,
+    db: Session = Depends(get_db),
+) -> Document:
+    doc = (
+        db.query(Document)
+        .options(selectinload(Document.sentences))
+        .filter(Document.id == document_id)
+        .one_or_none()
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    doc.contract_type = body.contract_type
+    db.commit()
+    db.refresh(doc)
     return doc
