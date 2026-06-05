@@ -19,6 +19,7 @@ def _infer_contract_type(title: str) -> str:
         ("non-disclosure", "NDA"),
         ("master services", "MSA"),
         ("services agreement", "MSA"),
+        ("msa", "MSA"),
         ("employment", "Employment"),
         ("data processing", "DPA"),
         ("dpa", "DPA"),
