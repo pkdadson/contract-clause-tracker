@@ -20,49 +20,53 @@ const TYPE_LABEL: Record<ContractType, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, ClauseChipComponent],
   template: `
-    <a
-      [routerLink]="['/documents', doc().id]"
-      class="block bg-surface border border-border rounded-md px-4 py-4 hover:border-border-strong hover:shadow-md transition-all duration-150 focus-visible:border-accent focus-visible:shadow-md"
+    <article
+      class="bg-surface border border-border rounded-md px-4 py-4 hover:border-border-strong hover:shadow-md transition-all duration-150 focus-within:border-accent focus-within:shadow-md"
     >
       <div class="grid grid-cols-[44px_1fr_auto] gap-4 items-center">
-        <div
-          data-testid="type-badge"
-          class="w-11 h-12 rounded-md bg-sunken border border-border grid place-items-center text-[10px] font-sans font-bold tracking-wide text-ink-muted"
-          aria-hidden="true"
+        <a
+          [routerLink]="['/documents', doc().id]"
+          class="contents focus-visible:outline-none"
         >
-          {{ typeBadge() }}
-        </div>
+          <div
+            data-testid="type-badge"
+            class="w-11 h-12 rounded-md bg-sunken border border-border grid place-items-center text-[10px] font-sans font-bold tracking-wide text-ink-muted"
+            aria-hidden="true"
+          >
+            {{ typeBadge() }}
+          </div>
 
-        <div class="min-w-0">
-          <div class="font-sans font-semibold text-[15px] tracking-tight text-ink truncate">
-            {{ doc().title }}
-          </div>
-          <div class="flex items-center gap-2 mt-1 text-xs text-ink-faint truncate">
-            @if (doc().party) {
-              <span class="truncate max-w-[180px]">{{ doc().party }}</span>
-              <span class="w-1 h-1 rounded-full bg-ink-faint/50" aria-hidden="true"></span>
-            }
-            <span [class.italic]="doc().contract_type === null">{{ typeLine() }}</span>
-            <span class="w-1 h-1 rounded-full bg-ink-faint/50" aria-hidden="true"></span>
-            <span>Updated {{ modifiedLabel() }}</span>
-          </div>
-          @if (doc().clause_types_present.length > 0) {
-            <div class="flex flex-wrap gap-1.5 mt-2.5">
-              @for (cid of visibleChips(); track cid) {
-                <app-clause-chip [clauseTypeId]="cid" />
-              }
-              @if (hiddenChipCount() > 0) {
-                <span
-                  class="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-md bg-sunken text-ink-muted"
-                >
-                  +{{ hiddenChipCount() }}
-                </span>
-              }
+          <div class="min-w-0">
+            <div class="font-sans font-semibold text-[15px] tracking-tight text-ink truncate">
+              {{ doc().title }}
             </div>
-          } @else {
-            <div class="text-xs text-ink-faint mt-2.5">No clauses labelled yet</div>
-          }
-        </div>
+            <div class="flex items-center gap-2 mt-1 text-xs text-ink-faint truncate">
+              @if (doc().party) {
+                <span class="truncate max-w-[180px]">{{ doc().party }}</span>
+                <span class="w-1 h-1 rounded-full bg-ink-faint/50" aria-hidden="true"></span>
+              }
+              <span [class.italic]="doc().contract_type === null">{{ typeLine() }}</span>
+              <span class="w-1 h-1 rounded-full bg-ink-faint/50" aria-hidden="true"></span>
+              <span>Updated {{ modifiedLabel() }}</span>
+            </div>
+            @if (doc().clause_types_present.length > 0) {
+              <div class="flex flex-wrap gap-1.5 mt-2.5">
+                @for (cid of visibleChips(); track cid) {
+                  <app-clause-chip [clauseTypeId]="cid" />
+                }
+                @if (hiddenChipCount() > 0) {
+                  <span
+                    class="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-md bg-sunken text-ink-muted"
+                  >
+                    +{{ hiddenChipCount() }}
+                  </span>
+                }
+              </div>
+            } @else {
+              <div class="text-xs text-ink-faint mt-2.5">No clauses labelled yet</div>
+            }
+          </div>
+        </a>
 
         <div class="flex flex-col items-end gap-1.5 min-w-[120px]">
           <label class="sr-only" [attr.for]="'type-' + doc().id">Contract type</label>
@@ -72,9 +76,6 @@ const TYPE_LABEL: Record<ContractType, string> = {
             class="text-[11px] bg-surface border border-border rounded-md px-1.5 py-1 hover:border-border-strong focus-visible:border-accent"
             [value]="doc().contract_type ?? ''"
             (change)="onTypeChange($event)"
-            (click)="$event.stopPropagation()"
-            (mousedown)="$event.stopPropagation()"
-            (keydown)="$event.stopPropagation()"
           >
             <option value="">Unclassified</option>
             @for (t of types; track t) {
@@ -99,7 +100,7 @@ const TYPE_LABEL: Record<ContractType, string> = {
           </div>
         </div>
       </div>
-    </a>
+    </article>
   `,
 })
 export class DocumentCardComponent {

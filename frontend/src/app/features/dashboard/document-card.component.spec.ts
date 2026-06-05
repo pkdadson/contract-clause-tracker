@@ -66,4 +66,10 @@ describe('DocumentCardComponent', () => {
     select.dispatchEvent(new Event('change'));
     expect(store.setContractType).toHaveBeenCalledWith('d1', null);
   });
+
+  it('keeps the picker outside the routerLink so it cannot trigger navigation', () => {
+    const { fixture } = render(make({ contract_type: null }));
+    const select = fixture.nativeElement.querySelector('[data-testid="type-select"]');
+    expect(select?.closest('a')).toBeNull();
+  });
 });
