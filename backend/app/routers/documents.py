@@ -7,7 +7,7 @@ from ..config import settings
 from ..dependencies import get_db
 from ..models import Document, Sentence
 from ..schemas import DocumentDetail, DocumentListItem
-from ..sentence_splitter import split_into_sentences
+from ..sentence_splitter import SplitSentence, split_into_sentences
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -33,7 +33,7 @@ def _match_keywords(haystack: str) -> str | None:
     return None
 
 
-def _infer_contract_type(title: str, sentences: list) -> str | None:
+def _infer_contract_type(title: str, sentences: list[SplitSentence]) -> str | None:
     by_title = _match_keywords(title)
     if by_title is not None:
         return by_title
@@ -78,7 +78,7 @@ async def upload_document(
         raise HTTPException(status_code=400, detail="File must be UTF-8 encoded text") from exc
 
     title = Path(filename).stem.replace("_", " ").replace("-", " ").title()
-    parsed = list(split_into_sentences(text))
+    parsed = split_into_sentences(text)
     doc = Document(title=title, contract_type=_infer_contract_type(title, parsed))
     db.add(doc)
     db.flush()
