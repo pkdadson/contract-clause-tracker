@@ -26,7 +26,8 @@ const render = (doc: DocumentListItem) => {
   TestBed.configureTestingModule({
     providers: [provideRouter([]), { provide: DocumentsStore, useValue: store }],
   });
-  const fixture: ComponentFixture<DocumentCardComponent> = TestBed.createComponent(DocumentCardComponent);
+  const fixture: ComponentFixture<DocumentCardComponent> =
+    TestBed.createComponent(DocumentCardComponent);
   fixture.componentRef.setInput('doc', doc);
   fixture.detectChanges();
   return { fixture, store };

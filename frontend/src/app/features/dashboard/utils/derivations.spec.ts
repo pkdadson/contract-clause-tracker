@@ -108,10 +108,7 @@ describe('groupDocuments', () => {
   });
 
   it('routes documents with null contract_type into an Unclassified group', () => {
-    const list = [
-      make({ id: 'a', contract_type: null }),
-      make({ id: 'b', contract_type: 'NDA' }),
-    ];
+    const list = [make({ id: 'a', contract_type: null }), make({ id: 'b', contract_type: 'NDA' })];
     const groups = groupDocuments(list, 'contract-type');
     const unclassified = groups.find(g => g.key === 'unclassified');
     expect(unclassified?.label).toBe('Unclassified');

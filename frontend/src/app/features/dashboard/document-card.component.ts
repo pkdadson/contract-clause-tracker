@@ -24,10 +24,7 @@ const TYPE_LABEL: Record<ContractType, string> = {
       class="bg-surface border border-border rounded-md px-4 py-4 hover:border-border-strong hover:shadow-md transition-all duration-150 focus-within:border-accent focus-within:shadow-md"
     >
       <div class="grid grid-cols-[44px_1fr_auto] gap-4 items-center">
-        <a
-          [routerLink]="['/documents', doc().id]"
-          class="contents focus-visible:outline-none"
-        >
+        <a [routerLink]="['/documents', doc().id]" class="contents focus-visible:outline-none">
           <div
             data-testid="type-badge"
             class="w-11 h-12 rounded-md bg-sunken border border-border grid place-items-center text-[10px] font-sans font-bold tracking-wide text-ink-muted"

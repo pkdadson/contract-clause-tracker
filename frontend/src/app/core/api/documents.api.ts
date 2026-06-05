@@ -24,9 +24,8 @@ export class DocumentsApi {
   }
 
   update(id: string, contractType: ContractType | null): Observable<DocumentDetail> {
-    return this.http.patch<DocumentDetail>(
-      `${environment.apiBase}/documents/${id}`,
-      { contract_type: contractType },
-    );
+    return this.http.patch<DocumentDetail>(`${environment.apiBase}/documents/${id}`, {
+      contract_type: contractType,
+    });
   }
 }
