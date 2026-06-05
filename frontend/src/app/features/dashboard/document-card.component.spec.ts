@@ -39,6 +39,14 @@ describe('DocumentCardComponent', () => {
     expect(text).toContain('MSA');
   });
 
+  it('initialises the dropdown selection to the current contract type', () => {
+    const { fixture } = render(make({ contract_type: 'MSA' }));
+    const select = fixture.nativeElement.querySelector(
+      '[data-testid="type-select"]',
+    ) as HTMLSelectElement;
+    expect(select.value).toBe('MSA');
+  });
+
   it('renders Unclassified and a ? badge when contract_type is null', () => {
     const { fixture } = render(make({ contract_type: null }));
     const root = fixture.nativeElement as HTMLElement;

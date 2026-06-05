@@ -74,12 +74,11 @@ const TYPE_LABEL: Record<ContractType, string> = {
             data-testid="type-select"
             [id]="'type-' + doc().id"
             class="text-[11px] bg-surface border border-border rounded-md px-1.5 py-1 hover:border-border-strong focus-visible:border-accent"
-            [value]="doc().contract_type ?? ''"
             (change)="onTypeChange($event)"
           >
-            <option value="">Unclassified</option>
+            <option value="" [selected]="doc().contract_type === null">Unclassified</option>
             @for (t of types; track t) {
-              <option [value]="t">{{ t }}</option>
+              <option [value]="t" [selected]="doc().contract_type === t">{{ t }}</option>
             }
           </select>
           <div
