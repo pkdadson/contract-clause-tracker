@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/pkdadson/contract-clause-tracker/actions/workflows/ci.yml/badge.svg?branch=main)
 
-A small web app for labelling legal clauses sentence-by-sentence across a contract library. Built as a take-home for Legartis.
+A small web app for labelling legal clauses sentence-by-sentence across a contract library.
 
 ## Running it
 
