@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 
 import { DocumentsApi } from '../api/documents.api';
-import type { DocumentListItem } from '../types/api';
+import type { ContractType, DocumentListItem } from '../types/api';
 import {
   groupDocuments,
   searchAndFilter,
@@ -60,6 +60,30 @@ export class DocumentsStore {
       const copy = [...list];
       copy[i] = doc;
       return copy;
+    });
+  }
+
+  setContractType(documentId: string, value: ContractType | null): void {
+    const list = this._documents();
+    const idx = list.findIndex(d => d.id === documentId);
+    if (idx === -1) return;
+    const previous = list[idx]!;
+    const optimistic: DocumentListItem = { ...previous, contract_type: value };
+    this._documents.update(curr => {
+      const copy = [...curr];
+      copy[idx] = optimistic;
+      return copy;
+    });
+    this.api.update(documentId, value).subscribe({
+      error: () => {
+        this._documents.update(curr => {
+          const copy = [...curr];
+          const i = copy.findIndex(d => d.id === documentId);
+          if (i !== -1) copy[i] = previous;
+          return copy;
+        });
+        this._error.set('Could not update contract type');
+      },
     });
   }
 }

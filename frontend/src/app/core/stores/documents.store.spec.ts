@@ -9,7 +9,7 @@ const make = (overrides: Partial<DocumentListItem>): DocumentListItem => ({
   id: overrides.id ?? 'd1',
   title: overrides.title ?? 'Mutual NDA',
   party: overrides.party ?? 'Acme',
-  contract_type: overrides.contract_type ?? 'NDA',
+  contract_type: overrides.contract_type === undefined ? 'NDA' : overrides.contract_type,
   uploaded_at: '2026-05-01T00:00:00',
   modified_at: overrides.modified_at ?? '2026-05-10T00:00:00',
   sentence_count: overrides.sentence_count ?? 10,
@@ -19,10 +19,14 @@ const make = (overrides: Partial<DocumentListItem>): DocumentListItem => ({
 
 interface ApiMock {
   list: jasmine.Spy<() => Observable<DocumentListItem[]>>;
+  update: jasmine.Spy<(id: string, ct: string | null) => Observable<unknown>>;
 }
 
 const setup = () => {
-  const api: ApiMock = { list: jasmine.createSpy('list') };
+  const api: ApiMock = {
+    list: jasmine.createSpy('list'),
+    update: jasmine.createSpy('update'),
+  };
   TestBed.configureTestingModule({
     providers: [DocumentsStore, { provide: DocumentsApi, useValue: api }],
   });
@@ -140,6 +144,36 @@ describe('DocumentsStore', () => {
 
       second.next([make({ id: 'B' })]);
       expect(store.all().map(d => d.id)).toEqual(['B']);
+    });
+  });
+
+  describe('setContractType', () => {
+    it('updates the cached document immediately (optimistic)', () => {
+      const { store, api } = setup();
+      api.list.and.returnValue(of([make({ id: 'd1', contract_type: null })]));
+      store.load();
+      const pending = new Subject<unknown>();
+      api.update.and.returnValue(pending.asObservable());
+      store.setContractType('d1', 'MSA');
+      expect(store.all()[0]!.contract_type).toBe('MSA');
+    });
+
+    it('reverts the cached document if the request fails', () => {
+      const { store, api } = setup();
+      api.list.and.returnValue(of([make({ id: 'd1', contract_type: null })]));
+      store.load();
+      api.update.and.returnValue(throwError(() => new Error('boom')));
+      store.setContractType('d1', 'MSA');
+      expect(store.all()[0]!.contract_type).toBeNull();
+      expect(store.error()).toBe('Could not update contract type');
+    });
+
+    it('does nothing if the document is not in the cache', () => {
+      const { store, api } = setup();
+      api.list.and.returnValue(of([]));
+      store.load();
+      store.setContractType('missing', 'MSA');
+      expect(api.update).not.toHaveBeenCalled();
     });
   });
 });
