@@ -9,6 +9,7 @@ import { DocumentDetailStore } from './document-detail.store';
 const sentence = (overrides: Partial<Sentence> = {}): Sentence => ({
   id: overrides.id ?? 's1',
   idx: overrides.idx ?? 0,
+  paragraph_idx: overrides.paragraph_idx ?? overrides.idx ?? 0,
   text: overrides.text ?? 'Some sentence.',
   is_heading: overrides.is_heading ?? false,
   clause_type_id: overrides.clause_type_id ?? null,

@@ -105,7 +105,7 @@ describe('DocumentsApi', () => {
 
       FakeEventSource.last!.emit({
         phase: 'sentences',
-        items: [{ id: 's1', idx: 0, text: 'Hi.', is_heading: false, clause_type_id: null }],
+        items: [{ id: 's1', idx: 0, paragraph_idx: 0, text: 'Hi.', is_heading: false, clause_type_id: null }],
       });
       FakeEventSource.last!.emit({ phase: 'done', total: 1 });
 
