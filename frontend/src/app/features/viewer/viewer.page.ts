@@ -257,8 +257,10 @@ export class ViewerPage implements OnInit {
   }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) this.store.load(id);
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      const id = params.get('id');
+      if (id) this.store.load(id);
+    });
   }
 
   trackByParagraph = (_: number, p: Paragraph): number => p.id;
