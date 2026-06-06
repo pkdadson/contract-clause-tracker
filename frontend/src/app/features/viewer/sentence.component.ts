@@ -11,7 +11,7 @@ import type { Sentence } from '../../core/types/api';
     @if (sentence().is_heading) {
       <h3 class="font-serif text-lg mt-6 mb-2 font-semibold">{{ sentence().text }}</h3>
     } @else if (disabled()) {
-      <span class="block font-serif leading-relaxed py-1 px-2 -mx-2 text-ink-muted">
+      <span class="block font-serif leading-relaxed py-2.5 px-2 -mx-2 text-ink-muted">
         {{ sentence().text }}
       </span>
     } @else {
@@ -22,7 +22,7 @@ import type { Sentence } from '../../core/types/api';
         [attr.aria-label]="ariaLabel()"
         [class.unlabeled-sentence]="!sentence().clause_type_id"
         [class.labeled-sentence]="!!sentence().clause_type_id"
-        class="block w-full text-left font-serif leading-relaxed py-1 px-2 -mx-2 rounded text-ink transition-colors duration-150 focus-visible:bg-accent-soft"
+        class="block w-full text-left font-serif leading-relaxed py-2.5 px-2 -mx-2 rounded text-ink transition-colors duration-150 focus-visible:bg-accent-soft"
         (click)="activate.emit()"
       >
         {{ sentence().text }}
