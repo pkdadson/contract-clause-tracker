@@ -44,10 +44,14 @@ import { ViewerHeader } from './viewer-header.component';
 
       @if (store.streaming()) {
         <p
-          class="max-w-2xl mx-auto px-4 md:px-8 pb-6 text-sm text-ink-muted text-center"
+          class="max-w-2xl mx-auto px-4 md:px-8 pb-6 text-sm text-ink-muted text-center flex items-center justify-center gap-2"
           role="status"
           aria-live="polite"
         >
+          <span
+            class="inline-block w-2 h-2 rounded-full bg-accent animate-pulse"
+            aria-hidden="true"
+          ></span>
           Saving sentences ({{ store.sentenceCount() }} so far)…
         </p>
       }
