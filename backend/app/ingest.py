@@ -70,7 +70,7 @@ async def parse_into(
             registry.publish(doc_id, {"phase": "error", "message": "Document not found"})
             return
 
-        parsed = split_into_sentences(text)
+        parsed = await asyncio.to_thread(split_into_sentences, text)
 
         if doc.contract_type is None:
             inferred = infer_from_content(parsed)
@@ -104,6 +104,7 @@ async def parse_into(
                     for s in inserted
                 ],
             })
+            await asyncio.sleep(0)
 
         registry.publish(doc_id, {"phase": "done", "total": len(parsed)})
     except Exception as exc:
