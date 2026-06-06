@@ -1,11 +1,15 @@
+import asyncio
+import json
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 
 from ..config import settings
 from ..contract_type import infer_from_content, infer_from_title
 from ..dependencies import get_db
+from ..ingest import IngestRegistry, get_registry, parse_into
 from ..models import Document, Sentence
 from ..schemas import DocumentDetail, DocumentListItem, DocumentUpdateRequest
 from ..sentence_splitter import split_into_sentences
@@ -91,6 +95,44 @@ def get_document(document_id: str, db: Session = Depends(get_db)) -> Document:
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
+
+
+@router.get("/{document_id}/progress")
+async def progress_stream(
+    document_id: str,
+    db: Session = Depends(get_db),
+    reg: IngestRegistry = Depends(get_registry),
+):
+    exists = db.query(Document.id).filter(Document.id == document_id).first() is not None
+    if not exists:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if not reg.is_active(document_id):
+        total = (
+            db.query(Sentence)
+            .filter(Sentence.document_id == document_id)
+            .count()
+        )
+
+        async def closed_generator():
+            payload = json.dumps({"phase": "done", "total": total})
+            yield f"data: {payload}\n\n"
+
+        return StreamingResponse(closed_generator(), media_type="text/event-stream")
+
+    queue = reg.subscribe(document_id)
+
+    async def event_generator():
+        try:
+            while True:
+                event = await queue.get()
+                yield f"data: {json.dumps(event)}\n\n"
+                if event.get("phase") in ("done", "error"):
+                    return
+        finally:
+            reg.unsubscribe(document_id, queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.patch("/{document_id}", response_model=DocumentDetail)
