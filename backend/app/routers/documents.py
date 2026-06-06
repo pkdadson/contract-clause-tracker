@@ -4,54 +4,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session, selectinload
 
 from ..config import settings
+from ..contract_type import infer_from_content, infer_from_title
 from ..dependencies import get_db
 from ..models import Document, Sentence
 from ..schemas import DocumentDetail, DocumentListItem, DocumentUpdateRequest
-from ..sentence_splitter import SplitSentence, split_into_sentences
+from ..sentence_splitter import split_into_sentences
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
-
-
-_TYPE_KEYWORDS: list[tuple[str, str]] = [
-    ("nda", "NDA"),
-    ("non-disclosure", "NDA"),
-    ("master services", "MSA"),
-    ("services agreement", "MSA"),
-    ("msa", "MSA"),
-    ("employment", "Employment"),
-    ("data processing", "DPA"),
-    ("dpa", "DPA"),
-    ("reseller", "Reseller"),
-]
-
-
-def _match_keywords(haystack: str) -> str | None:
-    lower = haystack.lower()
-    for keyword, ctype in _TYPE_KEYWORDS:
-        if keyword in lower:
-            return ctype
-    return None
-
-
-def _infer_contract_type(title: str, sentences: list[SplitSentence]) -> str | None:
-    by_title = _match_keywords(title)
-    if by_title is not None:
-        return by_title
-
-    head_text: list[str] = []
-    for ss in sentences:
-        if ss.is_heading:
-            head_text.append(ss.text)
-            break
-    body_seen = 0
-    for ss in sentences:
-        if ss.is_heading:
-            continue
-        head_text.append(ss.text)
-        body_seen += 1
-        if body_seen >= 2:
-            break
-    return _match_keywords(" ".join(head_text))
 
 
 @router.post("", response_model=DocumentDetail, status_code=status.HTTP_201_CREATED)
@@ -79,7 +38,7 @@ async def upload_document(
 
     title = Path(filename).stem.replace("_", " ").replace("-", " ").title()
     parsed = split_into_sentences(text)
-    doc = Document(title=title, contract_type=_infer_contract_type(title, parsed))
+    doc = Document(title=title, contract_type=infer_from_title(title) or infer_from_content(parsed))
     db.add(doc)
     db.flush()
 
