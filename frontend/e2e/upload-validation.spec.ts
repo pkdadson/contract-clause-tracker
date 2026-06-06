@@ -69,10 +69,10 @@ test('navigates to the viewer page before all sentences arrive', async ({ page }
 
     await page.waitForURL(/\/documents\/[^/]+$/, { timeout: 60000 });
 
-    const footer = page.getByRole('status').filter({ hasText: /Saving sentences/i });
-    await expect(footer).toBeVisible({ timeout: 1500 });
+    const placeholder = page.getByRole('status').filter({ hasText: /Parsing/i });
+    await expect(placeholder).toBeVisible({ timeout: 1500 });
 
-    await expect(footer).toBeHidden({ timeout: 10000 });
+    await expect(placeholder).toBeHidden({ timeout: 10000 });
 
     const headings = page.locator('h3');
     expect(await headings.count()).toBeGreaterThanOrEqual(0);
