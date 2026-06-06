@@ -27,7 +27,6 @@ import { ViewerHeader } from './viewer-header.component';
 interface Paragraph {
   id: number;
   sentences: Sentence[];
-  streaming?: boolean;
 }
 
 @Component({
@@ -85,7 +84,7 @@ interface Paragraph {
         [labeled]="store.labeledCount()"
         [total]="store.sentenceCount()"
       />
-      <div class="max-w-3xl mx-auto bg-surface my-6 md:my-10 rounded-lg shadow-sm">
+      <div class="max-w-3xl mx-auto bg-surface my-6 md:my-10 py-6 md:py-10 rounded-lg shadow-sm">
         <cdk-virtual-scroll-viewport
           autosize
           [minBufferPx]="800"
@@ -97,16 +96,7 @@ interface Paragraph {
             *cdkVirtualFor="let p of paragraphs(); trackBy: trackByParagraph"
             class="px-6 md:px-16"
           >
-            @if (p.streaming) {
-              <div class="streaming-placeholder font-serif" role="status" aria-live="polite">
-                <div class="skeleton" style="width: 92%"></div>
-                <div class="skeleton" style="width: 78%"></div>
-                <div class="skeleton" style="width: 56%"></div>
-                <p class="text-sm text-ink-muted mt-4">
-                  Parsing… {{ store.sentenceCount() }} sentences captured so far
-                </p>
-              </div>
-            } @else if (isHeadingParagraph(p)) {
+            @if (isHeadingParagraph(p)) {
               <app-sentence
                 [sentence]="p.sentences[0]"
                 [disabled]="store.streaming()"
@@ -125,6 +115,21 @@ interface Paragraph {
             }
           </div>
         </cdk-virtual-scroll-viewport>
+
+        @if (store.streaming()) {
+          <div
+            class="streaming-placeholder font-serif px-6 md:px-16 pb-8 md:pb-12"
+            role="status"
+            aria-live="polite"
+          >
+            <div class="skeleton" style="width: 92%"></div>
+            <div class="skeleton" style="width: 78%"></div>
+            <div class="skeleton" style="width: 56%"></div>
+            <p class="text-sm text-ink-muted mt-4">
+              Parsing… {{ store.sentenceCount() }} sentences captured so far
+            </p>
+          </div>
+        }
       </div>
 
       <ng-template
@@ -202,9 +207,6 @@ export class ViewerPage implements OnInit {
         groups.push(current);
       }
       current.sentences.push(s);
-    }
-    if (this.store.streaming()) {
-      groups.push({ id: -1, sentences: [], streaming: true });
     }
     return groups;
   });
