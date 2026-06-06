@@ -91,6 +91,13 @@ export class DocumentDetailStore {
   load(id: string): void {
     if (this._document()?.id === id) return;
     this.cancelLoad$.next();
+    if (this.streamingDocId && this.streamingDocId !== id) {
+      this.streamSub?.unsubscribe();
+      this.streamSub = null;
+      this.streamingDocId = null;
+      this._streaming.set(false);
+    }
+    this._document.set(null);
     this._loading.set(true);
     this._error.set(null);
     this._notFound.set(false);
