@@ -33,10 +33,24 @@ import { ViewerHeader } from './viewer-header.component';
       >
         @for (s of doc.sentences; track s.id) {
           <span #anchor="cdkOverlayOrigin" cdkOverlayOrigin>
-            <app-sentence [sentence]="s" (activate)="open(s.id, anchor)" />
+            <app-sentence
+              [sentence]="s"
+              [disabled]="store.streaming()"
+              (activate)="open(s.id, anchor)"
+            />
           </span>
         }
       </div>
+
+      @if (store.streaming()) {
+        <p
+          class="max-w-2xl mx-auto px-4 md:px-8 pb-6 text-sm text-ink-muted text-center"
+          role="status"
+          aria-live="polite"
+        >
+          Saving sentences ({{ store.sentenceCount() }} so far)…
+        </p>
+      }
 
       <ng-template
         cdkConnectedOverlay
@@ -135,6 +149,7 @@ export class ViewerPage implements OnInit {
   }
 
   open(sentenceId: string, anchor: CdkOverlayOrigin): void {
+    if (this.store.streaming()) return;
     this.openerElement = document.activeElement as HTMLElement | null;
     this.originRef.set(anchor);
     this.openId.set(sentenceId);
