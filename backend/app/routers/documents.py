@@ -102,16 +102,29 @@ async def progress_stream(
     if not exists:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    if not reg.is_active(document_id):
-        total = (
-            db.query(Sentence)
-            .filter(Sentence.document_id == document_id)
-            .count()
-        )
+    persisted = (
+        db.query(Sentence)
+        .filter(Sentence.document_id == document_id)
+        .order_by(Sentence.idx)
+        .all()
+    )
+    snapshot = [
+        {
+            "id": s.id,
+            "idx": s.idx,
+            "text": s.text,
+            "is_heading": s.is_heading,
+            "clause_type_id": s.clause_type_id,
+        }
+        for s in persisted
+    ]
+    max_snapshot_idx = persisted[-1].idx if persisted else -1
 
+    if not reg.is_active(document_id):
         async def closed_generator():
-            payload = json.dumps({"phase": "done", "total": total})
-            yield f"data: {payload}\n\n"
+            if snapshot:
+                yield f"data: {json.dumps({'phase': 'sentences', 'items': snapshot})}\n\n"
+            yield f"data: {json.dumps({'phase': 'done', 'total': len(snapshot)})}\n\n"
 
         return StreamingResponse(closed_generator(), media_type="text/event-stream")
 
@@ -119,11 +132,19 @@ async def progress_stream(
 
     async def event_generator():
         try:
+            if snapshot:
+                yield f"data: {json.dumps({'phase': 'sentences', 'items': snapshot})}\n\n"
             while True:
                 event = await queue.get()
-                yield f"data: {json.dumps(event)}\n\n"
-                if event.get("phase") in ("done", "error"):
-                    return
+                if event.get("phase") == "sentences":
+                    fresh = [item for item in event["items"] if item["idx"] > max_snapshot_idx]
+                    if not fresh:
+                        continue
+                    yield f"data: {json.dumps({'phase': 'sentences', 'items': fresh})}\n\n"
+                else:
+                    yield f"data: {json.dumps(event)}\n\n"
+                    if event.get("phase") in ("done", "error"):
+                        return
         finally:
             reg.unsubscribe(document_id, queue)
 
