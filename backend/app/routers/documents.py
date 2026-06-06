@@ -4,15 +4,14 @@ from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from ..config import settings
-from ..contract_type import infer_from_content, infer_from_title
+from ..contract_type import infer_from_title
 from ..dependencies import get_db
 from ..ingest import IngestRegistry, get_registry, parse_into
 from ..models import Document, Sentence
 from ..schemas import DocumentDetail, DocumentListItem, DocumentUpdateRequest
-from ..sentence_splitter import split_into_sentences
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -21,6 +20,7 @@ router = APIRouter(prefix="/api/documents", tags=["documents"])
 async def upload_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    reg: IngestRegistry = Depends(get_registry),
 ) -> Document:
     filename = file.filename or "untitled"
     ext = Path(filename).suffix.lower()
@@ -41,20 +41,15 @@ async def upload_document(
         raise HTTPException(status_code=400, detail="File must be UTF-8 encoded text") from exc
 
     title = Path(filename).stem.replace("_", " ").replace("-", " ").title()
-    parsed = split_into_sentences(text)
-    doc = Document(title=title, contract_type=infer_from_title(title) or infer_from_content(parsed))
+    doc = Document(title=title, contract_type=infer_from_title(title))
     db.add(doc)
-    db.flush()
-
-    for ss in parsed:
-        db.add(Sentence(
-            document_id=doc.id,
-            idx=ss.idx,
-            text=ss.text,
-            is_heading=ss.is_heading,
-        ))
     db.commit()
     db.refresh(doc)
+
+    factory = sessionmaker(bind=db.get_bind(), autocommit=False, autoflush=False)
+    task = asyncio.create_task(parse_into(doc.id, text, reg, factory))
+    reg.register_task(doc.id, task)
+
     return doc
 
 
