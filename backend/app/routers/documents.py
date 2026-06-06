@@ -119,6 +119,7 @@ async def progress_stream(
         for s in persisted
     ]
     max_snapshot_idx = persisted[-1].idx if persisted else -1
+    db.close()
 
     if not reg.is_active(document_id):
         async def closed_generator():
