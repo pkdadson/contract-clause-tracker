@@ -133,6 +133,7 @@ async def progress_stream(
         {
             "id": s.id,
             "idx": s.idx,
+            "paragraph_idx": s.paragraph_idx,
             "text": s.text,
             "is_heading": s.is_heading,
             "clause_type_id": s.clause_type_id,

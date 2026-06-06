@@ -15,6 +15,7 @@ class ClauseTypeOut(BaseModel):
 class SentenceOut(BaseModel):
     id: str
     idx: int
+    paragraph_idx: int
     text: str
     is_heading: bool
     clause_type_id: str | None

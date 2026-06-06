@@ -85,6 +85,7 @@ async def parse_into(
                 row = Sentence(
                     document_id=doc_id,
                     idx=ss.idx,
+                    paragraph_idx=ss.paragraph_idx,
                     text=ss.text,
                     is_heading=ss.is_heading,
                 )
@@ -97,6 +98,7 @@ async def parse_into(
                     {
                         "id": s.id,
                         "idx": s.idx,
+                        "paragraph_idx": s.paragraph_idx,
                         "text": s.text,
                         "is_heading": s.is_heading,
                         "clause_type_id": None,
