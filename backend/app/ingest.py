@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from typing import Any
+
+from sqlalchemy.orm import Session
+
+from .contract_type import infer_from_content
+from .db import SessionLocal
+from .models import Document, Sentence
+from .sentence_splitter import split_into_sentences
 
 
 class IngestRegistry:
@@ -43,3 +51,64 @@ registry = IngestRegistry()
 
 def get_registry() -> IngestRegistry:
     return registry
+
+
+BATCH_SIZE = 500
+
+
+async def parse_into(
+    doc_id: str,
+    text: str,
+    registry: IngestRegistry,
+    session_factory: Callable[[], Session] = SessionLocal,
+) -> None:
+    db = session_factory()
+    db.expire_on_commit = False
+    try:
+        doc = db.query(Document).filter(Document.id == doc_id).one_or_none()
+        if doc is None:
+            registry.publish(doc_id, {"phase": "error", "message": "Document not found"})
+            return
+
+        parsed = split_into_sentences(text)
+
+        if doc.contract_type is None:
+            inferred = infer_from_content(parsed)
+            if inferred:
+                doc.contract_type = inferred
+                db.commit()
+
+        for start in range(0, len(parsed), BATCH_SIZE):
+            chunk = parsed[start : start + BATCH_SIZE]
+            inserted: list[Sentence] = []
+            for ss in chunk:
+                row = Sentence(
+                    document_id=doc_id,
+                    idx=ss.idx,
+                    text=ss.text,
+                    is_heading=ss.is_heading,
+                )
+                db.add(row)
+                inserted.append(row)
+            db.commit()
+            registry.publish(doc_id, {
+                "phase": "sentences",
+                "items": [
+                    {
+                        "id": s.id,
+                        "idx": s.idx,
+                        "text": s.text,
+                        "is_heading": s.is_heading,
+                        "clause_type_id": None,
+                    }
+                    for s in inserted
+                ],
+            })
+
+        registry.publish(doc_id, {"phase": "done", "total": len(parsed)})
+    except Exception as exc:
+        db.rollback()
+        registry.publish(doc_id, {"phase": "error", "message": str(exc)})
+    finally:
+        registry.mark_inactive(doc_id)
+        db.close()
