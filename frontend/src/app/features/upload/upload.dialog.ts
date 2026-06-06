@@ -182,13 +182,16 @@ export class UploadDialog implements AfterViewInit, OnDestroy {
       next: doc => {
         this.uploading.set(false);
         this.detailStore.upsert(doc);
+        this.detailStore.streamProgress(doc.id);
         this.store.load();
         this.close.emit();
         this.router.navigate(['/documents', doc.id]);
       },
       error: e => {
         this.uploading.set(false);
-        this.error.set(e?.message ?? e?.error?.detail ?? 'Upload failed. Try again.');
+        this.error.set(
+          e?.error?.detail ?? e?.message ?? 'Upload failed. Try again.',
+        );
       },
     });
   }
