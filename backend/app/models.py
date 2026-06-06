@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import ForeignKey, String, Integer, Boolean, DateTime, Float
+from sqlalchemy import ForeignKey, Index, String, Integer, Boolean, DateTime, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -29,6 +29,7 @@ class Document(Base):
 
 class Sentence(Base):
     __tablename__ = "sentences"
+    __table_args__ = (Index("ix_sentences_document_id_idx", "document_id", "idx"),)
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
     document_id: Mapped[str] = mapped_column(ForeignKey("documents.id"), index=True)
     idx: Mapped[int] = mapped_column(Integer)

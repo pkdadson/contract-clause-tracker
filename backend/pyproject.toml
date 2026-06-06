@@ -12,6 +12,7 @@ dependencies = [
   "pydantic-settings>=2.6",
   "pysbd>=0.3.4",
   "python-multipart>=0.0.12",
+  "orjson>=3.10",
 ]
 
 [project.optional-dependencies]

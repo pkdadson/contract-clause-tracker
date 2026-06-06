@@ -1,11 +1,13 @@
 import asyncio
 import json
 from collections import defaultdict
+
+import orjson
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from fastapi.responses import StreamingResponse
-from sqlalchemy import and_, func
+from fastapi.responses import Response, StreamingResponse
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from ..config import settings
@@ -100,17 +102,45 @@ def list_documents(db: Session = Depends(get_db)) -> list[DocumentListItem]:
     return out
 
 
-@router.get("/{document_id}", response_model=DocumentDetail)
-def get_document(document_id: str, db: Session = Depends(get_db)) -> Document:
-    doc = (
-        db.query(Document)
-        .options(selectinload(Document.sentences))
-        .filter(Document.id == document_id)
-        .one_or_none()
-    )
+@router.get("/{document_id}")
+def get_document(document_id: str, db: Session = Depends(get_db)) -> Response:
+    doc = db.query(Document).filter(Document.id == document_id).one_or_none()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    return doc
+
+    rows = db.execute(
+        select(
+            Sentence.id,
+            Sentence.idx,
+            Sentence.paragraph_idx,
+            Sentence.text,
+            Sentence.is_heading,
+            Sentence.clause_type_id,
+        )
+        .where(Sentence.document_id == document_id)
+        .order_by(Sentence.idx)
+    ).all()
+
+    payload = {
+        "id": doc.id,
+        "title": doc.title,
+        "party": doc.party,
+        "contract_type": doc.contract_type,
+        "uploaded_at": doc.uploaded_at.isoformat(),
+        "modified_at": doc.modified_at.isoformat(),
+        "sentences": [
+            {
+                "id": r[0],
+                "idx": r[1],
+                "paragraph_idx": r[2],
+                "text": r[3],
+                "is_heading": r[4],
+                "clause_type_id": r[5],
+            }
+            for r in rows
+        ],
+    }
+    return Response(content=orjson.dumps(payload), media_type="application/json")
 
 
 @router.get("/{document_id}/progress")
