@@ -3,7 +3,7 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { DocumentsApi } from '../api/documents.api';
 import { LabelsApi } from '../api/labels.api';
-import type { DocumentDetail, Sentence } from '../types/api';
+import type { DocumentDetail, IngestEvent, Sentence } from '../types/api';
 import { DocumentDetailStore } from './document-detail.store';
 
 const sentence = (overrides: Partial<Sentence> = {}): Sentence => ({
@@ -30,6 +30,7 @@ const doc = (overrides: Partial<DocumentDetail> = {}): DocumentDetail => ({
 
 interface DocsApiMock {
   get: jasmine.Spy<(id: string) => Observable<DocumentDetail>>;
+  progressStream: jasmine.Spy<(id: string) => Observable<IngestEvent>>;
 }
 interface LabelsApiMock {
   set: jasmine.Spy<(d: string, s: string, c: string) => Observable<Sentence>>;
@@ -37,7 +38,10 @@ interface LabelsApiMock {
 }
 
 const setup = () => {
-  const docsApi: DocsApiMock = { get: jasmine.createSpy('get') };
+  const docsApi: DocsApiMock = {
+    get: jasmine.createSpy('get'),
+    progressStream: jasmine.createSpy('progressStream'),
+  };
   const labelsApi: LabelsApiMock = {
     set: jasmine.createSpy('set'),
     clear: jasmine.createSpy('clear'),
@@ -266,6 +270,88 @@ describe('DocumentDetailStore', () => {
 
       second.next(doc({ id: 'B' }));
       expect(store.document()?.id).toBe('B');
+    });
+  });
+
+  describe('streamProgress', () => {
+    it('flips streaming() to true and false as events arrive and complete', () => {
+      const { store, docsApi } = setup();
+      store.upsert(doc({ id: 'd1', sentences: [] }));
+
+      const events = new Subject<IngestEvent>();
+      docsApi.progressStream.and.returnValue(events.asObservable());
+
+      store.streamProgress('d1');
+      expect(store.streaming()).toBeTrue();
+
+      events.next({ phase: 'done', total: 0 });
+      events.complete();
+      expect(store.streaming()).toBeFalse();
+    });
+
+    it('appends streamed sentences into the current document', () => {
+      const { store, docsApi } = setup();
+      store.upsert(doc({ id: 'd1', sentences: [] }));
+
+      const events = new Subject<IngestEvent>();
+      docsApi.progressStream.and.returnValue(events.asObservable());
+
+      store.streamProgress('d1');
+      events.next({
+        phase: 'sentences',
+        items: [
+          sentence({ id: 'n1', idx: 0, text: 'One.' }),
+          sentence({ id: 'n2', idx: 1, text: 'Two.' }),
+        ],
+      });
+
+      expect(store.document()!.sentences.length).toBe(2);
+      expect(store.document()!.sentences.map(s => s.text)).toEqual(['One.', 'Two.']);
+    });
+
+    it('is a no-op when already streaming the same document', () => {
+      const { store, docsApi } = setup();
+      store.upsert(doc({ id: 'd1', sentences: [] }));
+      const events = new Subject<IngestEvent>();
+      docsApi.progressStream.and.returnValue(events.asObservable());
+
+      store.streamProgress('d1');
+      store.streamProgress('d1');
+
+      expect(docsApi.progressStream).toHaveBeenCalledTimes(1);
+    });
+
+    it('tears down a prior subscription when called with a different id', () => {
+      const { store, docsApi } = setup();
+      store.upsert(doc({ id: 'd1', sentences: [] }));
+
+      const firstStream = new Subject<IngestEvent>();
+      const secondStream = new Subject<IngestEvent>();
+      docsApi.progressStream.and.returnValues(
+        firstStream.asObservable(),
+        secondStream.asObservable(),
+      );
+
+      store.streamProgress('d1');
+      expect(firstStream.observed).toBeTrue();
+
+      store.upsert(doc({ id: 'd2', sentences: [] }));
+      store.streamProgress('d2');
+      expect(firstStream.observed).toBeFalse();
+    });
+
+    it('flips streaming() false and surfaces an error message on error event', () => {
+      const { store, docsApi } = setup();
+      store.upsert(doc({ id: 'd1', sentences: [] }));
+
+      const events = new Subject<IngestEvent>();
+      docsApi.progressStream.and.returnValue(events.asObservable());
+
+      store.streamProgress('d1');
+      events.error(new Error('boom'));
+
+      expect(store.streaming()).toBeFalse();
+      expect(store.error()).toBe('Lost connection while saving sentences. Refresh to see what was saved.');
     });
   });
 });
