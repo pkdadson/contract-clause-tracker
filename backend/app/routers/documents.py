@@ -1,9 +1,11 @@
 import asyncio
 import json
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from ..config import settings
@@ -55,16 +57,35 @@ async def upload_document(
 
 @router.get("", response_model=list[DocumentListItem])
 def list_documents(db: Session = Depends(get_db)) -> list[DocumentListItem]:
-    docs = (
-        db.query(Document)
-        .options(selectinload(Document.sentences))
-        .order_by(Document.modified_at.desc())
+    docs = db.query(Document).order_by(Document.modified_at.desc()).all()
+
+    body_filter = Sentence.is_heading == False  # noqa: E712 — SQL `=` semantics, not Python truthiness
+    stats_rows = (
+        db.query(
+            Sentence.document_id,
+            func.count().filter(body_filter).label("sentence_count"),
+            func.count()
+            .filter(and_(body_filter, Sentence.clause_type_id.isnot(None)))
+            .label("labeled_count"),
+        )
+        .group_by(Sentence.document_id)
         .all()
     )
+    stats: dict[str, tuple[int, int]] = {
+        row.document_id: (row.sentence_count, row.labeled_count) for row in stats_rows
+    }
+
+    clause_types_by_doc: dict[str, set[str]] = defaultdict(set)
+    for doc_id, ctype in (
+        db.query(Sentence.document_id, Sentence.clause_type_id)
+        .filter(body_filter, Sentence.clause_type_id.isnot(None))
+        .distinct()
+    ):
+        clause_types_by_doc[doc_id].add(ctype)
+
     out: list[DocumentListItem] = []
     for doc in docs:
-        body = [s for s in doc.sentences if not s.is_heading]
-        clause_ids = sorted({s.clause_type_id for s in body if s.clause_type_id})
+        sentence_count, labeled_count = stats.get(doc.id, (0, 0))
         out.append(DocumentListItem(
             id=doc.id,
             title=doc.title,
@@ -72,9 +93,9 @@ def list_documents(db: Session = Depends(get_db)) -> list[DocumentListItem]:
             contract_type=doc.contract_type,
             uploaded_at=doc.uploaded_at,
             modified_at=doc.modified_at,
-            sentence_count=len(body),
-            labeled_count=sum(1 for s in body if s.clause_type_id),
-            clause_types_present=clause_ids,
+            sentence_count=sentence_count,
+            labeled_count=labeled_count,
+            clause_types_present=sorted(clause_types_by_doc[doc.id]),
         ))
     return out
 
