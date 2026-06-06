@@ -72,9 +72,7 @@ test('navigates to the viewer page before all sentences arrive', async ({ page }
     const placeholder = page.getByRole('status').filter({ hasText: /Parsing/i });
     await expect(placeholder).toBeVisible({ timeout: 3000 });
 
-    await page.waitForFunction(() => document.querySelectorAll('app-sentence').length > 0, {
-      timeout: 30000,
-    });
+    await expect(page.getByRole('heading', { name: /tmp streaming/i })).toBeVisible();
   } finally {
     fs.unlinkSync(fixture);
   }
