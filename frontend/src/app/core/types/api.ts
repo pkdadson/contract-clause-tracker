@@ -45,3 +45,8 @@ export interface Suggestion {
   clause_type_id: string;
   confidence: number;
 }
+
+export type IngestEvent =
+  | { phase: 'sentences'; items: Sentence[] }
+  | { phase: 'done'; total: number }
+  | { phase: 'error'; message: string };
