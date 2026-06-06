@@ -24,7 +24,10 @@ const ALLOWED = ['.txt', '.md'];
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="fixed inset-0 z-40 bg-ink/40 grid place-items-center" (click)="close.emit()">
+    <div
+      class="fixed inset-0 z-40 bg-ink/40 grid place-items-center"
+      (click)="!uploading() && close.emit()"
+    >
       <div
         role="dialog"
         aria-modal="true"
