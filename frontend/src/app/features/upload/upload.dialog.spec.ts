@@ -88,7 +88,9 @@ describe('UploadDialog', () => {
       fixture.componentInstance.close.subscribe(closeSpy);
 
       const file = new File(['hello'], 'sample.txt', { type: 'text/plain' });
-      (fixture.componentInstance as unknown as { processFile: (f: File) => void }).processFile(file);
+      (fixture.componentInstance as unknown as { processFile: (f: File) => void }).processFile(
+        file,
+      );
 
       const req = http.expectOne(`${environment.apiBase}/documents`);
       req.flush(shellDoc('d1'));
@@ -104,7 +106,8 @@ describe('UploadDialog', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const upsertOrder = (detailStore.upsert.calls.mostRecent() as any).invocationOrder as number;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamOrder = (detailStore.streamProgress.calls.mostRecent() as any).invocationOrder as number;
+      const streamOrder = (detailStore.streamProgress.calls.mostRecent() as any)
+        .invocationOrder as number;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const navigateOrder = (router.navigate.calls.mostRecent() as any).invocationOrder as number;
       expect(upsertOrder).toBeLessThan(streamOrder);
@@ -113,10 +116,15 @@ describe('UploadDialog', () => {
 
     it('surfaces a backend validation error in the error slot', () => {
       const file = new File(['hello'], 'sample.txt', { type: 'text/plain' });
-      (fixture.componentInstance as unknown as { processFile: (f: File) => void }).processFile(file);
+      (fixture.componentInstance as unknown as { processFile: (f: File) => void }).processFile(
+        file,
+      );
 
       const req = http.expectOne(`${environment.apiBase}/documents`);
-      req.flush({ detail: 'Files must be .txt or .md (got .pdf)' }, { status: 415, statusText: 'Unsupported' });
+      req.flush(
+        { detail: 'Files must be .txt or .md (got .pdf)' },
+        { status: 415, statusText: 'Unsupported' },
+      );
 
       expect(fixture.componentInstance.error()).toContain('.pdf');
       expect(detailStore.streamProgress).not.toHaveBeenCalled();

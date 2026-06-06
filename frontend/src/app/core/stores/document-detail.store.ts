@@ -78,9 +78,7 @@ export class DocumentDetailStore {
         this._streaming.set(false);
         this.streamingDocId = null;
         this.streamSub = null;
-        this._error.set(
-          'Lost connection while saving sentences. Refresh to see what was saved.',
-        );
+        this._error.set('Lost connection while saving sentences. Refresh to see what was saved.');
       },
       complete: () => {
         this._streaming.set(false);

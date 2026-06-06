@@ -3,12 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import type {
-  ContractType,
-  DocumentDetail,
-  DocumentListItem,
-  IngestEvent,
-} from '../types/api';
+import type { ContractType, DocumentDetail, DocumentListItem, IngestEvent } from '../types/api';
 
 @Injectable({ providedIn: 'root' })
 export class DocumentsApi {
@@ -36,9 +31,7 @@ export class DocumentsApi {
 
   progressStream(documentId: string): Observable<IngestEvent> {
     return new Observable<IngestEvent>(subscriber => {
-      const source = new EventSource(
-        `${environment.apiBase}/documents/${documentId}/progress`,
-      );
+      const source = new EventSource(`${environment.apiBase}/documents/${documentId}/progress`);
       source.onmessage = e => {
         const event = JSON.parse(e.data) as IngestEvent;
         if (event.phase === 'error') {

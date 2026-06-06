@@ -352,7 +352,9 @@ describe('DocumentDetailStore', () => {
       events.error(new Error('boom'));
 
       expect(store.streaming()).toBeFalse();
-      expect(store.error()).toBe('Lost connection while saving sentences. Refresh to see what was saved.');
+      expect(store.error()).toBe(
+        'Lost connection while saving sentences. Refresh to see what was saved.',
+      );
     });
   });
 });

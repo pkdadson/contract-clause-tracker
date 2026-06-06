@@ -70,7 +70,11 @@ import type { Sentence } from '../../core/types/api';
         gap: 5px;
         margin-left: 6px;
         font-size: 11px;
-        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          sans-serif;
         font-weight: 500;
         color: var(--ink-muted);
         white-space: nowrap;

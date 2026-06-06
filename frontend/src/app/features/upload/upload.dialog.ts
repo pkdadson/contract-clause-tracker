@@ -189,9 +189,7 @@ export class UploadDialog implements AfterViewInit, OnDestroy {
       },
       error: e => {
         this.uploading.set(false);
-        this.error.set(
-          e?.error?.detail ?? e?.message ?? 'Upload failed. Try again.',
-        );
+        this.error.set(e?.error?.detail ?? e?.message ?? 'Upload failed. Try again.');
       },
     });
   }
