@@ -14,6 +14,7 @@ const setup = (overrides: { disabled?: boolean; is_heading?: boolean } = {}) => 
   fixture.componentRef.setInput('sentence', {
     id: 's1',
     idx: 0,
+    paragraph_idx: 0,
     text: 'Hello.',
     is_heading: overrides.is_heading ?? false,
     clause_type_id: null,
@@ -28,12 +29,12 @@ const setup = (overrides: { disabled?: boolean; is_heading?: boolean } = {}) => 
 describe('SentenceComponent', () => {
   it('renders a clickable button by default', () => {
     const fixture = setup();
-    expect(fixture.nativeElement.querySelector('button')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[role="button"]')).toBeTruthy();
   });
 
   it('renders plain text (no button) when disabled is true', () => {
     const fixture = setup({ disabled: true });
-    expect(fixture.nativeElement.querySelector('button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[role="button"]')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Hello.');
   });
 

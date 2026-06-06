@@ -1,26 +1,83 @@
-import { CdkOverlayOrigin, OverlayModule } from '@angular/cdk/overlay';
+import { OverlayModule } from '@angular/cdk/overlay';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import { ScrollingModule as ScrollingExperimentalModule } from '@angular/cdk-experimental/scrolling';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { fromEvent, merge } from 'rxjs';
 
 import { ClauseTypesStore } from '../../core/stores/clause-types.store';
 import { DocumentDetailStore } from '../../core/stores/document-detail.store';
 import { LiveAnnouncer } from '../../shared/a11y/live-announcer.service';
+import type { Sentence } from '../../core/types/api';
 import { ClausePicker, type PickerEvent } from './clause-picker/clause-picker.component';
 import { SentenceComponent } from './sentence.component';
 import { ViewerHeader } from './viewer-header.component';
+
+interface Paragraph {
+  id: number;
+  sentences: Sentence[];
+  streaming?: boolean;
+}
 
 @Component({
   selector: 'app-viewer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [OverlayModule, SentenceComponent, ClausePicker, ViewerHeader, RouterLink],
+  preserveWhitespaces: true,
+  imports: [
+    OverlayModule,
+    ScrollingModule,
+    ScrollingExperimentalModule,
+    SentenceComponent,
+    ClausePicker,
+    ViewerHeader,
+    RouterLink,
+  ],
+  styles: [
+    `
+      .streaming-placeholder {
+        margin-top: 4px;
+      }
+      .streaming-placeholder .skeleton {
+        height: 14px;
+        margin-bottom: 12px;
+        border-radius: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--surface-sunken) 0%,
+          var(--border) 50%,
+          var(--surface-sunken) 100%
+        );
+        background-size: 200% 100%;
+        animation: viewer-shimmer 1.6s ease-in-out infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .streaming-placeholder .skeleton {
+          animation: none;
+          background: var(--surface-sunken);
+        }
+      }
+      @keyframes viewer-shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+    `,
+  ],
   template: `
     @if (store.document(); as doc) {
       <app-viewer-header
@@ -28,33 +85,51 @@ import { ViewerHeader } from './viewer-header.component';
         [labeled]="store.labeledCount()"
         [total]="store.sentenceCount()"
       />
-      <div
-        class="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-8 bg-surface my-4 md:my-6 rounded shadow-sm border border-border"
-      >
-        @for (s of doc.sentences; track s.id) {
-          <span #anchor="cdkOverlayOrigin" cdkOverlayOrigin>
-            <app-sentence
-              [sentence]="s"
-              [disabled]="store.streaming()"
-              (activate)="open(s.id, anchor)"
-            />
-          </span>
-        }
-      </div>
-
-      @if (store.streaming()) {
-        <p
-          class="max-w-2xl mx-auto px-4 md:px-8 pb-6 text-sm text-ink-muted text-center flex items-center justify-center gap-2"
-          role="status"
-          aria-live="polite"
+      <div class="max-w-3xl mx-auto bg-surface my-6 md:my-10 rounded-lg shadow-sm">
+        <cdk-virtual-scroll-viewport
+          autosize
+          [minBufferPx]="800"
+          [maxBufferPx]="1600"
+          class="block py-8 md:py-12"
+          style="height: calc(100dvh - 9rem)"
         >
-          <span
-            class="inline-block w-2 h-2 rounded-full bg-accent animate-pulse"
-            aria-hidden="true"
-          ></span>
-          Saving sentences ({{ store.sentenceCount() }} so far)…
-        </p>
-      }
+          <div
+            *cdkVirtualFor="let p of paragraphs(); trackBy: trackByParagraph"
+            class="px-6 md:px-16"
+          >
+            @if (p.streaming) {
+              <div
+                class="streaming-placeholder font-serif"
+                role="status"
+                aria-live="polite"
+              >
+                <div class="skeleton" style="width: 92%"></div>
+                <div class="skeleton" style="width: 78%"></div>
+                <div class="skeleton" style="width: 56%"></div>
+                <p class="text-sm text-ink-muted mt-4">
+                  Parsing… {{ store.sentenceCount() }} sentences captured so far
+                </p>
+              </div>
+            } @else if (isHeadingParagraph(p)) {
+              <app-sentence
+                [sentence]="p.sentences[0]"
+                [disabled]="store.streaming()"
+                (activate)="open(p.sentences[0].id, $event)"
+              />
+            } @else {
+              <p class="font-serif text-[17px] leading-[1.8] mb-6 mt-0 text-ink">
+                @for (s of p.sentences; track s.id) {
+                  <app-sentence
+                    [sentence]="s"
+                    [disabled]="store.streaming()"
+                    (activate)="open(s.id, $event)"
+                  />
+                }
+              </p>
+            }
+          </div>
+        </cdk-virtual-scroll-viewport>
+      </div>
 
       <ng-template
         cdkConnectedOverlay
@@ -113,10 +188,30 @@ export class ViewerPage implements OnInit {
   private route = inject(ActivatedRoute);
   private clauseTypes = inject(ClauseTypesStore);
   private announcer = inject(LiveAnnouncer);
+  private destroyRef = inject(DestroyRef);
 
   openId = signal<string | null>(null);
-  originRef = signal<CdkOverlayOrigin | null>(null);
+  originRef = signal<HTMLElement | null>(null);
   private openerElement: HTMLElement | null = null;
+  private viewport = viewChild(CdkVirtualScrollViewport);
+
+  paragraphs = computed<Paragraph[]>(() => {
+    const doc = this.store.document();
+    if (!doc) return [];
+    const groups: Paragraph[] = [];
+    let current: Paragraph | null = null;
+    for (const s of doc.sentences) {
+      if (!current || current.id !== s.paragraph_idx) {
+        current = { id: s.paragraph_idx, sentences: [] };
+        groups.push(current);
+      }
+      current.sentences.push(s);
+    }
+    if (this.store.streaming()) {
+      groups.push({ id: -1, sentences: [], streaming: true });
+    }
+    return groups;
+  });
 
   openSentence = computed(() => {
     const id = this.openId();
@@ -147,12 +242,35 @@ export class ViewerPage implements OnInit {
     },
   ];
 
+  constructor() {
+    effect(() => {
+      const vp = this.viewport();
+      if (!vp) return;
+      const el = vp.elementRef.nativeElement;
+      merge(
+        fromEvent(el, 'wheel', { passive: true }),
+        fromEvent(el, 'touchmove', { passive: true }),
+      )
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => {
+          if (this.openId()) this.close();
+        });
+    });
+  }
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) this.store.load(id);
   }
 
-  open(sentenceId: string, anchor: CdkOverlayOrigin): void {
+  trackByParagraph = (_: number, p: Paragraph): number => p.id;
+
+  isHeadingParagraph(p: Paragraph): boolean {
+    const first = p.sentences[0];
+    return p.sentences.length === 1 && !!first && first.is_heading;
+  }
+
+  open(sentenceId: string, anchor: HTMLElement): void {
     if (this.store.streaming()) return;
     this.openerElement = document.activeElement as HTMLElement | null;
     this.originRef.set(anchor);
