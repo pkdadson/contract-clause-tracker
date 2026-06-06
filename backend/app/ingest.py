@@ -53,7 +53,7 @@ def get_registry() -> IngestRegistry:
     return registry
 
 
-BATCH_SIZE = 500
+BATCH_SIZE = 50
 
 
 async def parse_into(
