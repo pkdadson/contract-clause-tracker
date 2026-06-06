@@ -25,7 +25,7 @@ const ALLOWED = ['.txt', '.md'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="fixed inset-0 z-40 bg-ink/40 grid place-items-center"
+      class="fixed inset-0 z-40 bg-black/40 grid place-items-center"
       (click)="!uploading() && close.emit()"
     >
       <div
@@ -103,7 +103,7 @@ const ALLOWED = ['.txt', '.md'];
           <button
             type="button"
             (click)="close.emit()"
-            class="px-3 py-2 text-sm font-medium text-ink-muted hover:text-ink hover:bg-sunken rounded-md transition-colors duration-150"
+            class="px-4 py-3 text-sm font-medium text-ink-muted hover:text-ink hover:bg-sunken rounded-md transition-colors duration-150"
           >
             Cancel
           </button>
