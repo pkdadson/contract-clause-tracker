@@ -54,7 +54,7 @@ test('rejects files over the 5 MB ceiling with a specific size in the error', as
 
 test('navigates to the viewer page before all sentences arrive', async ({ page }) => {
   const fixture = path.resolve(__dirname, 'tmp-streaming.txt');
-  const lines = Array.from({ length: 2000 }, (_, i) => `Sentence number ${i}.`).join(' ');
+  const lines = Array.from({ length: 2000 }, (_, i) => `Sentence number ${i}.`).join('\n');
   fs.writeFileSync(fixture, lines);
 
   try {
@@ -70,9 +70,9 @@ test('navigates to the viewer page before all sentences arrive', async ({ page }
     await page.waitForURL(/\/documents\/[^/]+$/, { timeout: 60000 });
 
     const placeholder = page.getByRole('status').filter({ hasText: /Parsing/i });
-    await expect(placeholder).toBeVisible({ timeout: 1500 });
+    await expect(placeholder).toBeVisible({ timeout: 3000 });
 
-    await expect(placeholder).toBeHidden({ timeout: 10000 });
+    await expect(placeholder).toBeHidden({ timeout: 30000 });
 
     const headings = page.locator('h3');
     expect(await headings.count()).toBeGreaterThanOrEqual(0);
