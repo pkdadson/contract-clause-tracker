@@ -32,6 +32,7 @@ class Sentence(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_id)
     document_id: Mapped[str] = mapped_column(ForeignKey("documents.id"), index=True)
     idx: Mapped[int] = mapped_column(Integer)
+    paragraph_idx: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     text: Mapped[str] = mapped_column(String)
     is_heading: Mapped[bool] = mapped_column(Boolean, default=False)
     clause_type_id: Mapped[str | None] = mapped_column(

@@ -9,51 +9,90 @@ import type { Sentence } from '../../core/types/api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (sentence().is_heading) {
-      <h3 class="font-serif text-lg mt-6 mb-2 font-semibold">{{ sentence().text }}</h3>
+      <h3 class="font-serif text-xl md:text-2xl mt-8 mb-3 font-semibold tracking-tight text-ink">
+        {{ sentence().text }}
+      </h3>
+    } @else if (disabled()) {
+      <span class="text-ink-muted">{{ sentence().text }}</span>
     } @else {
-      <button
-        type="button"
+      <span
+        #btn
+        role="button"
+        tabindex="0"
         [attr.data-state]="state()"
         [style.--clause-color]="clauseColor()"
         [attr.aria-label]="ariaLabel()"
         [class.unlabeled-sentence]="!sentence().clause_type_id"
         [class.labeled-sentence]="!!sentence().clause_type_id"
-        class="block w-full text-left font-serif leading-relaxed py-1 px-2 -mx-2 rounded text-ink transition-colors duration-150 focus-visible:bg-accent-soft"
-        (click)="activate.emit()"
+        class="sentence-btn"
+        (click)="activate.emit(btn)"
+        (keydown.enter)="activate.emit(btn); $event.preventDefault()"
+        (keydown.space)="activate.emit(btn); $event.preventDefault()"
       >
         {{ sentence().text }}
         @if (clauseName(); as name) {
-          <span
-            class="ml-2 align-middle inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-sans font-medium border border-border bg-surface"
-            aria-hidden="true"
-          >
-            <span class="w-1.5 h-1.5 rounded-full" [style.background]="clauseColor()"></span>
+          <span class="clause-chip" aria-hidden="true">
+            <span class="clause-dot" [style.background]="clauseColor()"></span>
             {{ name }}
           </span>
         }
-      </button>
+      </span>
     }
   `,
   styles: [
     `
-      .unlabeled-sentence {
-        text-decoration: underline dotted color-mix(in oklab, var(--ink-muted) 35%, transparent);
-        text-underline-offset: 4px;
-        text-decoration-thickness: 1px;
+      :host {
+        display: inline;
+      }
+      .sentence-btn {
+        cursor: pointer;
+        border-radius: 2px;
+        transition: background-color 150ms ease-out;
+      }
+      .sentence-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
       }
       .unlabeled-sentence:hover {
         background: var(--accent-soft);
       }
       .labeled-sentence {
-        border-left: 3px solid var(--clause-color);
-        padding-left: 0.75rem;
+        background: color-mix(in oklab, var(--clause-color) 14%, transparent);
+        box-shadow: inset 0 -2px 0 var(--clause-color);
+        padding: 0 3px;
+      }
+      .labeled-sentence:hover {
+        background: color-mix(in oklab, var(--clause-color) 22%, transparent);
+      }
+      .clause-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-left: 6px;
+        font-size: 11px;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        font-weight: 500;
+        color: var(--ink-muted);
+        white-space: nowrap;
+        vertical-align: middle;
+      }
+      .clause-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
       }
     `,
   ],
 })
 export class SentenceComponent {
   sentence = input.required<Sentence>();
-  activate = output<void>();
+  disabled = input<boolean>(false);
+  activate = output<HTMLElement>();
 
   private store = inject(ClauseTypesStore);
 

@@ -51,3 +51,31 @@ test('rejects files over the 5 MB ceiling with a specific size in the error', as
     fs.unlinkSync(fixture);
   }
 });
+
+test('navigates to the viewer page before all sentences arrive', async ({ page }) => {
+  const fixture = path.resolve(__dirname, 'tmp-streaming.txt');
+  const lines = Array.from({ length: 2000 }, (_, i) => `Sentence number ${i}.`).join('\n');
+  fs.writeFileSync(fixture, lines);
+
+  try {
+    await page.goto('/');
+
+    await page
+      .getByRole('button', { name: /upload/i })
+      .first()
+      .click();
+
+    await page.setInputFiles('input[type="file"]', fixture);
+
+    await page.waitForURL(/\/documents\/[^/]+$/, { timeout: 60000 });
+
+    const placeholder = page.getByRole('status').filter({ hasText: /Parsing/i });
+    await expect(placeholder).toBeVisible({ timeout: 3000 });
+
+    await page.waitForFunction(() => document.querySelectorAll('app-sentence').length > 0, {
+      timeout: 30000,
+    });
+  } finally {
+    fs.unlinkSync(fixture);
+  }
+});

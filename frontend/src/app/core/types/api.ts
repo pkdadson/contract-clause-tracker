@@ -12,6 +12,7 @@ export interface ClauseType {
 export interface Sentence {
   id: string;
   idx: number;
+  paragraph_idx: number;
   text: string;
   is_heading: boolean;
   clause_type_id: string | null;
@@ -45,3 +46,8 @@ export interface Suggestion {
   clause_type_id: string;
   confidence: number;
 }
+
+export type IngestEvent =
+  | { phase: 'sentences'; items: Sentence[] }
+  | { phase: 'done'; total: number }
+  | { phase: 'error'; message: string };

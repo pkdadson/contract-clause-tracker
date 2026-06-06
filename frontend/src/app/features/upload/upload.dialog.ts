@@ -24,7 +24,10 @@ const ALLOWED = ['.txt', '.md'];
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="fixed inset-0 z-40 bg-ink/40 grid place-items-center" (click)="close.emit()">
+    <div
+      class="fixed inset-0 z-40 bg-black/40 grid place-items-center"
+      (click)="!uploading() && close.emit()"
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -100,7 +103,7 @@ const ALLOWED = ['.txt', '.md'];
           <button
             type="button"
             (click)="close.emit()"
-            class="px-3 py-2 text-sm font-medium text-ink-muted hover:text-ink hover:bg-sunken rounded-md transition-colors duration-150"
+            class="px-4 py-3 text-sm font-medium text-ink-muted hover:text-ink hover:bg-sunken rounded-md transition-colors duration-150"
           >
             Cancel
           </button>
@@ -179,13 +182,14 @@ export class UploadDialog implements AfterViewInit, OnDestroy {
       next: doc => {
         this.uploading.set(false);
         this.detailStore.upsert(doc);
+        this.detailStore.streamProgress(doc.id);
         this.store.load();
         this.close.emit();
         this.router.navigate(['/documents', doc.id]);
       },
       error: e => {
         this.uploading.set(false);
-        this.error.set(e?.message ?? e?.error?.detail ?? 'Upload failed. Try again.');
+        this.error.set(e?.error?.detail ?? e?.message ?? 'Upload failed. Try again.');
       },
     });
   }

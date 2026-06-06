@@ -1,63 +1,28 @@
+import asyncio
+import json
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy.orm import Session, selectinload
+from fastapi.responses import StreamingResponse
+from sqlalchemy import and_, func
+from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from ..config import settings
+from ..contract_type import infer_from_title
 from ..dependencies import get_db
+from ..ingest import IngestRegistry, get_registry, parse_into
 from ..models import Document, Sentence
 from ..schemas import DocumentDetail, DocumentListItem, DocumentUpdateRequest
-from ..sentence_splitter import SplitSentence, split_into_sentences
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
-
-
-_TYPE_KEYWORDS: list[tuple[str, str]] = [
-    ("nda", "NDA"),
-    ("non-disclosure", "NDA"),
-    ("master services", "MSA"),
-    ("services agreement", "MSA"),
-    ("msa", "MSA"),
-    ("employment", "Employment"),
-    ("data processing", "DPA"),
-    ("dpa", "DPA"),
-    ("reseller", "Reseller"),
-]
-
-
-def _match_keywords(haystack: str) -> str | None:
-    lower = haystack.lower()
-    for keyword, ctype in _TYPE_KEYWORDS:
-        if keyword in lower:
-            return ctype
-    return None
-
-
-def _infer_contract_type(title: str, sentences: list[SplitSentence]) -> str | None:
-    by_title = _match_keywords(title)
-    if by_title is not None:
-        return by_title
-
-    head_text: list[str] = []
-    for ss in sentences:
-        if ss.is_heading:
-            head_text.append(ss.text)
-            break
-    body_seen = 0
-    for ss in sentences:
-        if ss.is_heading:
-            continue
-        head_text.append(ss.text)
-        body_seen += 1
-        if body_seen >= 2:
-            break
-    return _match_keywords(" ".join(head_text))
 
 
 @router.post("", response_model=DocumentDetail, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    reg: IngestRegistry = Depends(get_registry),
 ) -> Document:
     filename = file.filename or "untitled"
     ext = Path(filename).suffix.lower()
@@ -78,35 +43,49 @@ async def upload_document(
         raise HTTPException(status_code=400, detail="File must be UTF-8 encoded text") from exc
 
     title = Path(filename).stem.replace("_", " ").replace("-", " ").title()
-    parsed = split_into_sentences(text)
-    doc = Document(title=title, contract_type=_infer_contract_type(title, parsed))
+    doc = Document(title=title, contract_type=infer_from_title(title))
     db.add(doc)
-    db.flush()
-
-    for ss in parsed:
-        db.add(Sentence(
-            document_id=doc.id,
-            idx=ss.idx,
-            text=ss.text,
-            is_heading=ss.is_heading,
-        ))
     db.commit()
     db.refresh(doc)
+
+    factory = sessionmaker(bind=db.get_bind(), autocommit=False, autoflush=False)
+    task = asyncio.create_task(parse_into(doc.id, text, reg, factory))
+    reg.register_task(doc.id, task)
+
     return doc
 
 
 @router.get("", response_model=list[DocumentListItem])
 def list_documents(db: Session = Depends(get_db)) -> list[DocumentListItem]:
-    docs = (
-        db.query(Document)
-        .options(selectinload(Document.sentences))
-        .order_by(Document.modified_at.desc())
+    docs = db.query(Document).order_by(Document.modified_at.desc()).all()
+
+    body_filter = Sentence.is_heading == False  # noqa: E712 — SQL `=` semantics, not Python truthiness
+    stats_rows = (
+        db.query(
+            Sentence.document_id,
+            func.count().filter(body_filter).label("sentence_count"),
+            func.count()
+            .filter(and_(body_filter, Sentence.clause_type_id.isnot(None)))
+            .label("labeled_count"),
+        )
+        .group_by(Sentence.document_id)
         .all()
     )
+    stats: dict[str, tuple[int, int]] = {
+        row.document_id: (row.sentence_count, row.labeled_count) for row in stats_rows
+    }
+
+    clause_types_by_doc: dict[str, set[str]] = defaultdict(set)
+    for doc_id, ctype in (
+        db.query(Sentence.document_id, Sentence.clause_type_id)
+        .filter(body_filter, Sentence.clause_type_id.isnot(None))
+        .distinct()
+    ):
+        clause_types_by_doc[doc_id].add(ctype)
+
     out: list[DocumentListItem] = []
     for doc in docs:
-        body = [s for s in doc.sentences if not s.is_heading]
-        clause_ids = sorted({s.clause_type_id for s in body if s.clause_type_id})
+        sentence_count, labeled_count = stats.get(doc.id, (0, 0))
         out.append(DocumentListItem(
             id=doc.id,
             title=doc.title,
@@ -114,9 +93,9 @@ def list_documents(db: Session = Depends(get_db)) -> list[DocumentListItem]:
             contract_type=doc.contract_type,
             uploaded_at=doc.uploaded_at,
             modified_at=doc.modified_at,
-            sentence_count=len(body),
-            labeled_count=sum(1 for s in body if s.clause_type_id),
-            clause_types_present=clause_ids,
+            sentence_count=sentence_count,
+            labeled_count=labeled_count,
+            clause_types_present=sorted(clause_types_by_doc[doc.id]),
         ))
     return out
 
@@ -132,6 +111,67 @@ def get_document(document_id: str, db: Session = Depends(get_db)) -> Document:
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
+
+
+@router.get("/{document_id}/progress")
+async def progress_stream(
+    document_id: str,
+    db: Session = Depends(get_db),
+    reg: IngestRegistry = Depends(get_registry),
+):
+    exists = db.query(Document.id).filter(Document.id == document_id).first() is not None
+    if not exists:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    persisted = (
+        db.query(Sentence)
+        .filter(Sentence.document_id == document_id)
+        .order_by(Sentence.idx)
+        .all()
+    )
+    snapshot = [
+        {
+            "id": s.id,
+            "idx": s.idx,
+            "paragraph_idx": s.paragraph_idx,
+            "text": s.text,
+            "is_heading": s.is_heading,
+            "clause_type_id": s.clause_type_id,
+        }
+        for s in persisted
+    ]
+    max_snapshot_idx = persisted[-1].idx if persisted else -1
+    db.close()
+
+    if not reg.is_active(document_id):
+        async def closed_generator():
+            if snapshot:
+                yield f"data: {json.dumps({'phase': 'sentences', 'items': snapshot})}\n\n"
+            yield f"data: {json.dumps({'phase': 'done', 'total': len(snapshot)})}\n\n"
+
+        return StreamingResponse(closed_generator(), media_type="text/event-stream")
+
+    queue = reg.subscribe(document_id)
+
+    async def event_generator():
+        try:
+            if snapshot:
+                yield f"data: {json.dumps({'phase': 'sentences', 'items': snapshot})}\n\n"
+            while True:
+                event = await queue.get()
+                if event.get("phase") == "sentences":
+                    fresh = [item for item in event["items"] if item["idx"] > max_snapshot_idx]
+                    if not fresh:
+                        continue
+                    yield f"data: {json.dumps({'phase': 'sentences', 'items': fresh})}\n\n"
+                else:
+                    yield f"data: {json.dumps(event)}\n\n"
+                    if event.get("phase") in ("done", "error"):
+                        return
+        finally:
+            reg.unsubscribe(document_id, queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.patch("/{document_id}", response_model=DocumentDetail)

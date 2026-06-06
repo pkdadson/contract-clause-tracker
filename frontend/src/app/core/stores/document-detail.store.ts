@@ -1,9 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Subscription, takeUntil } from 'rxjs';
 
 import { DocumentsApi } from '../api/documents.api';
 import { LabelsApi } from '../api/labels.api';
-import type { DocumentDetail, Sentence } from '../types/api';
+import type { DocumentDetail, IngestEvent, Sentence } from '../types/api';
 
 interface LabelInflight {
   /** The pre-optimistic label, captured before *any* in-flight call mutated it. */
@@ -29,6 +29,12 @@ export class DocumentDetailStore {
   readonly error = this._error.asReadonly();
   readonly notFound = this._notFound.asReadonly();
 
+  private readonly _streaming = signal(false);
+  readonly streaming = this._streaming.asReadonly();
+
+  private streamingDocId: string | null = null;
+  private streamSub: Subscription | null = null;
+
   readonly bodySentences = computed(() =>
     (this._document()?.sentences ?? []).filter(s => !s.is_heading),
   );
@@ -38,11 +44,48 @@ export class DocumentDetailStore {
   readonly sentenceCount = computed(() => this.bodySentences().length);
 
   upsert(doc: DocumentDetail): void {
+    if (this.streamingDocId && this.streamingDocId !== doc.id) {
+      this.streamSub?.unsubscribe();
+      this.streamSub = null;
+      this.streamingDocId = null;
+      this._streaming.set(false);
+    }
     this.cancelLoad$.next();
     this._document.set(doc);
     this._loading.set(false);
     this._error.set(null);
     this._notFound.set(false);
+  }
+
+  streamProgress(documentId: string): void {
+    if (this.streamingDocId === documentId && this.streamSub && !this.streamSub.closed) {
+      return;
+    }
+    this.streamSub?.unsubscribe();
+    this.streamingDocId = documentId;
+    this._streaming.set(true);
+
+    this.streamSub = this.docsApi.progressStream(documentId).subscribe({
+      next: (event: IngestEvent) => {
+        if (event.phase === 'sentences') {
+          this._document.update(doc => {
+            if (!doc || doc.id !== documentId) return doc;
+            return { ...doc, sentences: [...doc.sentences, ...event.items] };
+          });
+        }
+      },
+      error: () => {
+        this._streaming.set(false);
+        this.streamingDocId = null;
+        this.streamSub = null;
+        this._error.set('Lost connection while saving sentences. Refresh to see what was saved.');
+      },
+      complete: () => {
+        this._streaming.set(false);
+        this.streamingDocId = null;
+        this.streamSub = null;
+      },
+    });
   }
 
   load(id: string): void {
