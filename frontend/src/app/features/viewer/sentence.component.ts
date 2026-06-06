@@ -10,6 +10,10 @@ import type { Sentence } from '../../core/types/api';
   template: `
     @if (sentence().is_heading) {
       <h3 class="font-serif text-lg mt-6 mb-2 font-semibold">{{ sentence().text }}</h3>
+    } @else if (disabled()) {
+      <span class="block font-serif leading-relaxed py-1 px-2 -mx-2 text-ink-muted">
+        {{ sentence().text }}
+      </span>
     } @else {
       <button
         type="button"
@@ -53,6 +57,7 @@ import type { Sentence } from '../../core/types/api';
 })
 export class SentenceComponent {
   sentence = input.required<Sentence>();
+  disabled = input<boolean>(false);
   activate = output<void>();
 
   private store = inject(ClauseTypesStore);
