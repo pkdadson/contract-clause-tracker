@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
@@ -8,6 +8,7 @@ import type { ContractType, DocumentDetail, DocumentListItem, IngestEvent } from
 @Injectable({ providedIn: 'root' })
 export class DocumentsApi {
   private http = inject(HttpClient);
+  private zone = inject(NgZone);
 
   list(): Observable<DocumentListItem[]> {
     return this.http.get<DocumentListItem[]>(`${environment.apiBase}/documents`);
@@ -32,23 +33,25 @@ export class DocumentsApi {
   progressStream(documentId: string): Observable<IngestEvent> {
     return new Observable<IngestEvent>(subscriber => {
       const source = new EventSource(`${environment.apiBase}/documents/${documentId}/progress`);
-      source.onmessage = e => {
-        const event = JSON.parse(e.data) as IngestEvent;
-        if (event.phase === 'error') {
-          subscriber.error(new Error(event.message));
+      source.onmessage = e =>
+        this.zone.run(() => {
+          const event = JSON.parse(e.data) as IngestEvent;
+          if (event.phase === 'error') {
+            subscriber.error(new Error(event.message));
+            source.close();
+            return;
+          }
+          subscriber.next(event);
+          if (event.phase === 'done') {
+            subscriber.complete();
+            source.close();
+          }
+        });
+      source.onerror = () =>
+        this.zone.run(() => {
+          subscriber.error(new Error('Progress stream connection lost'));
           source.close();
-          return;
-        }
-        subscriber.next(event);
-        if (event.phase === 'done') {
-          subscriber.complete();
-          source.close();
-        }
-      };
-      source.onerror = () => {
-        subscriber.error(new Error('Progress stream connection lost'));
-        source.close();
-      };
+        });
       return () => source.close();
     });
   }
