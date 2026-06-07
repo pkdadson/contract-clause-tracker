@@ -85,6 +85,21 @@ interface Paragraph {
         [total]="store.sentenceCount()"
       />
       <div class="max-w-3xl mx-auto bg-surface my-6 md:my-10 py-6 md:py-10 rounded-lg shadow-sm">
+        @if (store.streaming()) {
+          <div
+            class="streaming-placeholder font-serif px-6 md:px-16 pt-8 md:pt-12"
+            role="status"
+            aria-live="polite"
+          >
+            <p class="text-sm text-ink-muted mb-4">
+              Parsing… {{ store.sentenceCount() }} sentences captured so far
+            </p>
+            <div class="skeleton" style="width: 92%"></div>
+            <div class="skeleton" style="width: 78%"></div>
+            <div class="skeleton" style="width: 56%"></div>
+          </div>
+        }
+
         <cdk-virtual-scroll-viewport
           autosize
           [minBufferPx]="800"
@@ -115,21 +130,6 @@ interface Paragraph {
             }
           </div>
         </cdk-virtual-scroll-viewport>
-
-        @if (store.streaming()) {
-          <div
-            class="streaming-placeholder font-serif px-6 md:px-16 pb-8 md:pb-12"
-            role="status"
-            aria-live="polite"
-          >
-            <div class="skeleton" style="width: 92%"></div>
-            <div class="skeleton" style="width: 78%"></div>
-            <div class="skeleton" style="width: 56%"></div>
-            <p class="text-sm text-ink-muted mt-4">
-              Parsing… {{ store.sentenceCount() }} sentences captured so far
-            </p>
-          </div>
-        }
       </div>
 
       <ng-template
