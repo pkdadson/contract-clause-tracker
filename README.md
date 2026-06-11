@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/pkdadson/contract-clause-tracker/actions/workflows/ci.yml/badge.svg?branch=main)
 
-A small web app for labelling legal clauses sentence-by-sentence across a contract library.
+A small web app for labelling legal clauses sentence-by-sentence across a contract library. A play project to spend time on streaming uploads, optimistic UI, and accessible inline labelling on long-form legal text.
 
 ## Running it
 
@@ -14,17 +14,17 @@ Then open http://localhost:4200. The API serves at http://localhost:8000/api, wi
 
 ## What's in scope
 
-The case study asked for three things and I built exactly that: upload a contract (txt or markdown), label individual sentences with clause types in a viewer, and a dashboard with search, filter, grouping, and sort. Everything else I considered is in [Future work](#future-work) at the bottom.
+Three things: upload a contract (txt or markdown), label individual sentences with clause types in a viewer, and a dashboard with search, filter, grouping, and sort. Everything else I considered is in [Future work](#future-work) at the bottom.
 
 ## How it's put together
 
-**Backend — FastAPI, SQLite, SQLAlchemy 2.0.** Upload `POST`s the file, the API validates it, creates the `Document` row, kicks off parsing as an `asyncio` task, and returns `201` immediately — the client never waits on the parse. The parser splits the text into sentences (each one a row with a `clause_type_id` column for the label) using a regex-plus-abbreviation-merger splitter that handles the legal abbreviations (`Inc.`, `Art.`, `e.g.`) without falling over on contracts with tens of thousands of sentences. Sentences track a `paragraph_idx` derived from source-line boundaries, so the viewer can re-group them into paragraphs without guessing. A separate `GET /api/documents/{id}/progress` Server-Sent Events stream emits sentences in batches as they're persisted, plus a one-shot snapshot of whatever's already in the DB when a client subscribes — so refreshing a tab mid-parse picks up where it left off. The schema also ships a `clause_suggestions` table and a `GET /api/documents/{id}/suggestions` endpoint that returns `[]` today; those are the seam for the auto-labelling step we'll add in the pair session.
+**Backend — FastAPI, SQLite, SQLAlchemy 2.0.** Upload `POST`s the file, the API validates it, creates the `Document` row, kicks off parsing as an `asyncio` task, and returns `201` immediately — the client never waits on the parse. The parser splits the text into sentences (each one a row with a `clause_type_id` column for the label) using a regex-plus-abbreviation-merger splitter that handles the legal abbreviations (`Inc.`, `Art.`, `e.g.`) without falling over on contracts with tens of thousands of sentences. Sentences track a `paragraph_idx` derived from source-line boundaries, so the viewer can re-group them into paragraphs without guessing. A separate `GET /api/documents/{id}/progress` Server-Sent Events stream emits sentences in batches as they're persisted, plus a one-shot snapshot of whatever's already in the DB when a client subscribes — so refreshing a tab mid-parse picks up where it left off. The schema also ships a `clause_suggestions` table and a `GET /api/documents/{id}/suggestions` endpoint that returns `[]` today; those are the seam for the auto-labelling step I want to add next.
 
 **Frontend — Angular 17, signals, CDK Overlay, CDK virtual scroll.** Standalone components throughout. The dashboard's search / filter / grouping / sort state is bound to the URL query string, so any view is bookmarkable and shareable. The viewer wraps the sentence list in `cdk-virtual-scroll-viewport` with the autosize strategy from `@angular/cdk-experimental`, so even a 100k-sentence document only mounts the visible window (~40 rows). Sentences with the same `paragraph_idx` render inline inside a `<p>`, so prose flows continuously across line wraps instead of stacking as a list — each sentence cell is a `<span role="button" tabindex="0">` (not a `<button>`, because browsers coerce `display: inline` on form controls to `inline-block`, which would break the flow). The labelling popover is a CDK ConnectedOverlay anchored to the clicked sentence, implementing the ARIA combobox pattern: typeable search, arrow navigation, Enter applies, Backspace removes when the query is empty, Escape closes. Label changes are optimistic against the local signal and roll back on API failure.
 
 ### The labelling round-trip
 
-The critical interaction in the app — the part I'd want a reviewer to dig into — is the optimistic-with-rollback path. It's the same sequence whether the user accepts an AI suggestion (future work) or applies a manual label:
+The critical interaction in the app — and the part most worth understanding — is the optimistic-with-rollback path. It's the same sequence whether the user accepts an AI suggestion (future work) or applies a manual label:
 
 ```mermaid
 sequenceDiagram
@@ -62,7 +62,7 @@ The non-obvious detail is the *snapshot*. On rapid re-clicks of the same sentenc
 - **SQL aggregates for the dashboard list.** `GET /api/documents` no longer hydrates every sentence to count three numbers; sentence counts, labelled counts, and the set of clause types present are computed as `func.count(...).filter(...)` and `DISTINCT` queries against the sentences table. Dropped from 2.5s to 40ms on a database with a 100k-sentence document in it.
 - **Sentence pre-split on the server.** The frontend gets a clean `Sentence[]` and renders each as an inline `<span role="button">` with proper ARIA (`<button>` would break inline prose flow). That keeps the labelling UI accessible by construction and avoids fragile character-offset math in the browser.
 - **URL-bound dashboard state.** The setter writes; the URL is a serialised snapshot the browser can bookmark, share, or back-button into. I deliberately don't write the URL back into the store on every change — the user action is the writer.
-- **Editorial serif for the contract body, sans for the chrome.** A reviewer is reading a contract, not an app. Source Serif 4 inherits the editorial tradition that long-form legal text comes in. Inter handles UI text; JetBrains Mono is reserved for IDs and tabular numbers.
+- **Editorial serif for the contract body, sans for the chrome.** Someone using this is reading a contract, not an app. Source Serif 4 inherits the editorial tradition that long-form legal text comes in. Inter handles UI text; JetBrains Mono is reserved for IDs and tabular numbers.
 
 ### Discipline choices
 
@@ -98,11 +98,11 @@ CI runs all of the above on every push and pull request via `.github/workflows/c
 
 ## Future work
 
-The case study capped this at 3–4 hours. The items below are deliberate deferrals, each with the trigger that would move them onto a real backlog.
+I kept the initial scope tight on purpose. The items below are deliberate deferrals, each with the trigger that would move them onto a real backlog.
 
-- **Automatic clause labelling.** The pair-session extension. Schema (`clause_suggestions`) and endpoint (`GET /api/documents/{id}/suggestions`) are stubbed from day one, so the labeller is purely additive — no schema migration, no contract changes.
+- **Automatic clause labelling.** Schema (`clause_suggestions`) and endpoint (`GET /api/documents/{id}/suggestions`) are stubbed from day one, so the labeller is purely additive — no schema migration, no contract changes.
 - **Counterparty extraction.** The contract's other side — "Acme Corp" on an NDA between the user's organisation and Acme — is how legal teams actually slice a contract library: by who they're dealing with. The schema ships the seam: a nullable `party` column on `documents` and a `party: string | null` field on the response. The missing piece is a preamble parser. Same logic as the labelling seam — schema-first, frontend forward-compatible — so the day the extractor lands, dashboard group-by-party and filter-by-party appear without a UI change.
-- **Many-to-many sentence ↔ clause.** The case study assumes single cardinality. The migration is one Alembic revision (junction table, backfill, drop column) and a multi-select picker.
+- **Many-to-many sentence ↔ clause.** The current schema assumes single cardinality. The migration is one Alembic revision (junction table, backfill, drop column) and a multi-select picker.
 - **Server-side search and pagination.** Triggers: dashboard past ~1,000 documents, full-text search across bodies, or per-user permissions. The current `searchAndFilter` is a pure function behind a signal; swapping it for an HTTP call doesn't touch the components.
 - **Bulk operations.** "Apply to similar sentences", "jump to next unlabelled" hotkey, range-select.
 - **Dark mode.** The design tokens are CSS variables; dark mode is a `prefers-color-scheme` override, not a rewrite.
